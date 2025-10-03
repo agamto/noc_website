@@ -169,8 +169,8 @@ func (a *App) handleAddUser(w http.ResponseWriter, req *http.Request) {
         http.Error(w, "invalid request body: "+err.Error(), http.StatusBadRequest)
         return
     }
-	if looksLikeSQLInjection(body.Team) || looksLikeSQLInjection(body.phonenumber) || looksLikeSQLInjection(body.Username) {
-		http.Error(w, "sql injection")
+	if looksLikeSQLInjection(body.Team) || looksLikeSQLInjection(body.Phonenumber) || looksLikeSQLInjection(body.Username) {
+		http.Error(w, "sql injection", http.StatusBadRequest)
 		return
 	} 
     // connect to DB
