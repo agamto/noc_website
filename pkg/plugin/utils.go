@@ -31,6 +31,18 @@ func ExtractSettings(settings backend.AppInstanceSettings) (host, user, dbname s
 
     return host, user, dbname, port, password, nil
 }
+var sqliPattern = regexp.MustCompile(`(?i)(\b(select|union|insert|update|delete|drop|truncate|alter|--|;|/\*|\*/|' or '|or 1=1|exec|xp_)\b)`)
+
+func looksLikeSQLInjection(s string) bool {
+    if s == "" {
+        return false
+    }
+    // short circuit—long strings are suspicious too
+    if len(s) > 500 {
+        return true
+    }
+    return sqliPattern.MatchString(s)
+}
 func ConnectToDB(settings backend.AppInstanceSettings) (*sql.DB, error) {
 	// 1. Extract non-secret values from jsonData
 	host, user, dbname, port, password, err := ExtractSettings(settings)

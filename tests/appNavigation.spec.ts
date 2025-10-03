@@ -2,9 +2,9 @@ import { test, expect } from './fixtures';
 import { ROUTES } from '../src/constants';
 
 test.describe('navigating app', () => {
-  test('page one should render successfully', async ({ gotoPage, page }) => {
+  test('main page', async ({ gotoPage, page }) => {
     await gotoPage(`/${ROUTES.One}`);
-    await expect(page.getByText('This is page one.')).toBeVisible();
+    await expect(page.getByText('main page')).toBeVisible();
   });
 
   test('page contacts should render successfully', async ({ gotoPage, page }) => {
