@@ -9,7 +9,7 @@ test.describe('navigating app', () => {
 
   test('contacts', async ({ gotoPage, page }) => {
     await gotoPage(`/${ROUTES.CONTACTS}`);
-    await expect(page.getByText(/contacts/i)).toBeVisible();
+    await expect(page.getByText(/contacts/i).nth(1)).toBeVisible();
   });
 
 });
