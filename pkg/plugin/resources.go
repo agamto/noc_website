@@ -169,7 +169,10 @@ func (a *App) handleAddUser(w http.ResponseWriter, req *http.Request) {
         http.Error(w, "invalid request body: "+err.Error(), http.StatusBadRequest)
         return
     }
-
+	if looksLikeSQLInjection(body.Team) || looksLikeSQLInjection(body.Phonenumber) || looksLikeSQLInjection(body.Username) {
+		http.Error(w, "sql injection", http.StatusBadRequest)
+		return
+	} 
     // connect to DB
     db, err := ConnectToDB(a.settings)
     if err != nil {
@@ -177,7 +180,6 @@ func (a *App) handleAddUser(w http.ResponseWriter, req *http.Request) {
         return
     }
     defer db.Close()
-
     // Insert new user
     var newID int
     query := `INSERT INTO public.users (username, team, phonenumber) 

@@ -4,7 +4,7 @@ import { css } from '@emotion/css';
 import { AppPluginMeta, GrafanaTheme2, PluginConfigPageProps, PluginMeta } from '@grafana/data';
 import { getBackendSrv } from '@grafana/runtime';
 import { Button, Field, FieldSet, Input, SecretInput, useStyles2 } from '@grafana/ui';
-
+import {testIds} from '../testIds'
 type AppPluginSettings = {
   apiUrl?: string;
   host?: string;
@@ -75,6 +75,7 @@ const AppConfig = ({ plugin }: AppConfigProps) => {
           <Input
             width={60}
             name="host"
+            data-testid={testIds.appConfig.host}
             id="dbhost"
             value={DBstate.host}
             placeholder={`E.g.: mydbinstance.123456789012.us-east-1.rds.amazonaws.com`}
@@ -85,6 +86,7 @@ const AppConfig = ({ plugin }: AppConfigProps) => {
           <Input
             width={60}
             name="port"
+            data-testid={testIds.appConfig.port}
             id="dbport"
             value={DBstate.port}
             placeholder={`E.g.: 5432`}
@@ -96,6 +98,7 @@ const AppConfig = ({ plugin }: AppConfigProps) => {
             width={60}
             name="dbname"
             id="dbname"
+            data-testid={testIds.appConfig.dbname}
             value={DBstate.dbname}
             placeholder={`E.g.: grafanadb`}
             onChange={onDBChange}
@@ -106,6 +109,7 @@ const AppConfig = ({ plugin }: AppConfigProps) => {
             width={60}
             name="user"
             id="user"
+            data-testid={testIds.appConfig.user}
             value={DBstate.user}
             placeholder={`E.g.: grafanauser`}
             onChange={onDBChange}
@@ -116,6 +120,7 @@ const AppConfig = ({ plugin }: AppConfigProps) => {
             width={60}
             id="password"
             name="password"
+            data-testid={testIds.appConfig.password}
             value={DBstate.password}
             isConfigured={DBstate.isPasswordSet}
             placeholder={'your db password'}

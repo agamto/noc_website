@@ -19,7 +19,7 @@ export const AddUser: React.FC<Props> = ({ addNewUser }) => {
   });
     const isSubmitDisabled = Boolean(!state.userName || !state.phoneNumber || !state.team);
     const onStateChange = (event: ChangeEvent<HTMLInputElement>) => {
-        setState({...state, [event.target.name]: event.target.value.trim()});
+        setState({...state, [event.target.name]: event.target.value});
     };
     const onSubmit = () => {
     if (isSubmitDisabled) {
