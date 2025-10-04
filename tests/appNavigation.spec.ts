@@ -7,9 +7,9 @@ test.describe('navigating app', () => {
     await expect(page.getByText('main page')).toBeVisible();
   });
 
-  test('page contacts should render successfully', async ({ gotoPage, page }) => {
+  test('contacts', async ({ gotoPage, page }) => {
     await gotoPage(`/${ROUTES.CONTACTS}`);
-    await expect(page.getByText('contacts')).toBeVisible();
+    await expect(page.getByText(/contacts/i)).toBeVisible();
   });
 
 });
