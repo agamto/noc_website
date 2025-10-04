@@ -4,7 +4,7 @@ test('should be possible to save app configuration', async ({ appConfigPage, pag
   const saveButton = page.getByRole('button', { name: /Save DB settings/i });
 
   // reset the configured secret
-  await page.getByRole('button', { name: /Reset/i }).click();
+  await page.getByRole('button', { name: /reset/i }).click();
 
   // enter some valid values
   await page.getByRole('textbox', { name: 'password' }).fill('test password');
