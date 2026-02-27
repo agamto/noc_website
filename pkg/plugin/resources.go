@@ -167,10 +167,16 @@ func (a *App) handleAddUser(w http.ResponseWriter, req *http.Request) {
         Team        string `json:"team"`
         Phonenumber string `json:"phonenumber"`
     }
+	
     if err := json.NewDecoder(req.Body).Decode(&body); err != nil {
         http.Error(w, "invalid request body: "+err.Error(), http.StatusBadRequest)
         return
     }
+	if len(body.Phonenumber) != 10 || !isDigits(body.Phonenumber) {
+		msg := fmt.Sprintf("phone number invalid")
+		http.Error(w,msg,http.StatusBadRequest)
+		return
+	}
 	if looksLikeSQLInjection(body.Team) || looksLikeSQLInjection(body.Phonenumber) || looksLikeSQLInjection(body.Username) {
 		http.Error(w, "sql injection", http.StatusBadRequest)
 		return
