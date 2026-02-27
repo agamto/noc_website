@@ -18,7 +18,7 @@ function PageFive() {
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState("");
 
-  const getUsers = useCallback(async (pageNum: number,startStr: string =search) => {
+  const getUsers = useCallback(async (pageNum: number,startStr: string ="") => {
   try {
     pageNum = pageNum? pageNum : 1
     const res = await getBackendSrv().get(
