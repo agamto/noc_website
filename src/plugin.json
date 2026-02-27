@@ -22,8 +22,8 @@
   "includes": [
     {
       "type": "page",
-      "name": "Page One",
-      "path": "/a/%PLUGIN_ID%/one",
+      "name": "main page",
+      "path": "/a/%PLUGIN_ID%/main",
       "addToNav": true,
       "defaultNav": true
     },

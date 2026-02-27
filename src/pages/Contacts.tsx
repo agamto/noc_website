@@ -8,6 +8,7 @@ import { UsersTable } from '../components/appcomponents/UsersTable'
 import {AddUser} from '../components/appcomponents/AddUser'
 import { ROUTES } from '../constants';
 import { prefixRoute } from 'utils/utils.routing';
+import SearchBar from "../components/appcomponents/SearchBar"
 function PageFive() {
   const s = useStyles2(getStyles);
   const [users, setUsers] = useState<any[]>([]);
@@ -15,12 +16,13 @@ function PageFive() {
   const [page, setPage] = useState(1);
   const [limit] = useState(5);
   const [totalPages, setTotalPages] = useState(1);
+  const [search, setSearch] = useState("");
 
-  const getUsers = useCallback(async (pageNum: number) => {
+  const getUsers = useCallback(async (pageNum: number,startStr: string ="") => {
   try {
     pageNum = pageNum? pageNum : 1
     const res = await getBackendSrv().get(
-      `/api/plugins/main-noc-app/resources/users?page=${pageNum}&limit=${limit}`
+      `/api/plugins/main-noc-app/resources/users?page=${pageNum}&limit=${limit}&start=${startStr}`
     );
     setUsers(Array.isArray(res.data) ? res.data : []);
     setPage(res.page);
@@ -54,14 +56,17 @@ function PageFive() {
   useEffect(() => {
     getUsers(page);
   }, [page, getUsers]);
-
+  const handleSearch = async (value: string) => {
+    setSearch(value);       // save the value in state
+    await getUsers(1, value);     // call your function with the current search string
+  };
   const handleClick = () => {
     setIsVisible(!isVisible); // toggle true/false
   };
   return (
     <PluginPage layout={PageLayoutType.Canvas}>
         <div className={s.container}>
-          <LinkButton href={prefixRoute(ROUTES.One)}>
+          <LinkButton href={prefixRoute(ROUTES.Main)}>
             to main page
           </LinkButton>
           <div className={s.content}>contacts</div>
@@ -70,6 +75,9 @@ function PageFive() {
           </div>
           <div>
           {isVisible &&<AddUser addNewUser={handleAdd}></AddUser>}
+          </div>
+          <div>
+            <SearchBar onSearch={handleSearch} />
           </div>
           <div>
             <UsersTable users={users} page={page} totalPages={totalPages} onPageChange={(newPage: any) => getUsers(newPage)} onDelete={handleDelete} />

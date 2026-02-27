@@ -45,6 +45,7 @@ func (a *App) handleGetUsers(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+	startStr := req.URL.Query().Get("start")
 	pageStr := req.URL.Query().Get("page")
 	limitStr := req.URL.Query().Get("limit")
 	page := 1
@@ -66,8 +67,9 @@ func (a *App) handleGetUsers(w http.ResponseWriter, req *http.Request) {
 	defer db.Close()
 	rows, err := db.Query(`SELECT id, username, team, phonenumber
 		 FROM public.users
+		 WHERE username LIKE $3 || '%'
 		 ORDER BY id
-		 LIMIT $1 OFFSET $2`, limit, offset)
+		 LIMIT $1 OFFSET $2`, limit, offset,startStr)
 	if err != nil {
 		http.Error(w, "failed to query db: "+err.Error(), http.StatusInternalServerError)
 		return
