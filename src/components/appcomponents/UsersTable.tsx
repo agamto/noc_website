@@ -10,12 +10,13 @@ type User = {
 type Props = {
   users: User[];
   page: number;
+  currentSearch: string;
   totalPages: number;
-  onPageChange: (page: number) => void;
+  onPageChange: (page: number,search: string) => void;
   onDelete: (id: number) => void;
 };
 
-export const UsersTable: React.FC<Props> = ({ users, onDelete,page, totalPages, onPageChange }) => {
+export const UsersTable: React.FC<Props> = ({ users, onDelete,page, totalPages,currentSearch, onPageChange }) => {
   const [sortColumn, setSortColumn] = useState<keyof User | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
@@ -84,14 +85,14 @@ export const UsersTable: React.FC<Props> = ({ users, onDelete,page, totalPages, 
       </tbody>
     </table>
      <div style={{ marginTop: "10px", display: "flex", gap: "5px" }}>
-        <button onClick={() => onPageChange(page - 1)} disabled={page === 1}>
+        <button onClick={() => onPageChange(page - 1,currentSearch)} disabled={page === 1}>
           Prev
         </button>
 
         {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
           <button
             key={p}
-            onClick={() => onPageChange(p)}
+            onClick={() => onPageChange(p,currentSearch)}
             style={{
               fontWeight: page === p ? "bold" : "normal",
               background: page === p ? "#ddd" : "",
@@ -101,7 +102,7 @@ export const UsersTable: React.FC<Props> = ({ users, onDelete,page, totalPages, 
           </button>
         ))}
 
-        <button onClick={() => onPageChange(page + 1)} disabled={page === totalPages}>
+        <button onClick={() => onPageChange(page + 1,currentSearch)} disabled={page === totalPages}>
           Next
         </button>
       </div>

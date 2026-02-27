@@ -18,7 +18,7 @@ function PageFive() {
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState("");
 
-  const getUsers = useCallback(async (pageNum: number,startStr: string ="") => {
+  const getUsers = useCallback(async (pageNum: number,startStr: string =search) => {
   try {
     pageNum = pageNum? pageNum : 1
     const res = await getBackendSrv().get(
@@ -36,7 +36,7 @@ function PageFive() {
 
   const handleDelete = async (id: number) => {
     await getBackendSrv().delete(`/api/plugins/main-noc-app/resources/delete/user/${id}`);
-    await getUsers(page); // refresh table
+    await getUsers(page,search); // refresh table
   };
   const handleAdd = async (userName: string, phoneNumber: string, team: string) => {
     try{
@@ -46,7 +46,7 @@ function PageFive() {
         team: team
       }
       const res = await getBackendSrv().post(`/api/plugins/main-noc-app/resources/user`,data);
-      await getUsers(page);
+      await getUsers(page,search);
      return res;
     } catch (err) {
       console.error('Failed to post new user:',err);
@@ -54,7 +54,7 @@ function PageFive() {
     }
   }
   useEffect(() => {
-    getUsers(page);
+    getUsers(page,search);
   }, [page, getUsers]);
   const handleSearch = async (value: string) => {
     setSearch(value);       // save the value in state
@@ -80,7 +80,7 @@ function PageFive() {
             <SearchBar onSearch={handleSearch} />
           </div>
           <div>
-            <UsersTable users={users} page={page} totalPages={totalPages} onPageChange={(newPage: any) => getUsers(newPage)} onDelete={handleDelete} />
+            <UsersTable users={users} page={page} totalPages={totalPages} currentSearch={search} onPageChange={(newPage: any) => getUsers(newPage,search)} onDelete={handleDelete} />
           </div>
         </div>
     </PluginPage>

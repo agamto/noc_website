@@ -92,7 +92,7 @@ func (a *App) handleGetUsers(w http.ResponseWriter, req *http.Request) {
 		users = append(users, u)
 	}
 	var total int
-	err = db.QueryRow("SELECT COUNT(*) FROM public.users").Scan(&total)
+	err = db.QueryRow("SELECT COUNT(*) FROM public.users WHERE username LIKE $1 || '%'",startStr).Scan(&total)
 	if err != nil {
 		http.Error(w, "failed to count users: "+err.Error(), http.StatusInternalServerError)
 		return
