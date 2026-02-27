@@ -55,7 +55,7 @@ function PageFive() {
   }
   useEffect(() => {
     getUsers(page,search);
-  }, [page, getUsers]);
+  }, [page,search, getUsers]);
   const handleSearch = async (value: string) => {
     setSearch(value);       // save the value in state
     await getUsers(1, value);     // call your function with the current search string
