@@ -131,7 +131,7 @@ jobs:
     needs: build
     if: ${{ needs.build.outputs.has-e2e == 'true' }}
     outputs:
-      matrix: ${{ steps.resolve-versions.outputs.matrix }}
+      matrix: ${{ steps.add-oss-versions.outputs.matrix }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -141,6 +141,14 @@ jobs:
       - name: Resolve Grafana E2E versions
         id: resolve-versions
         uses: grafana/plugin-actions/e2e-version@main # zizmor: ignore[unpinned-uses] provided by grafana
+
+      - name: Add Grafana OSS versions
+        id: add-oss-versions
+        env:
+          RESOLVED_MATRIX: ${{ steps.resolve-versions.outputs.matrix }}
+        run: |
+          matrix=$(jq -c '. + [{"NAME":"grafana-oss","VERSION":"12.4"},{"NAME":"grafana-oss","VERSION":"13.2"}]' <<< "$RESOLVED_MATRIX")
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
 
   playwright-tests:
     needs: [resolve-versions, build]
