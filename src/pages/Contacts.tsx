@@ -53,6 +53,14 @@ function PageFive() {
       throw err;
     }
   }
+  const handleUpdate = async (id: number, userName: string, phoneNumber: string, team: string) => {
+    await getBackendSrv().put(`/api/plugins/main-noc-app/resources/user/${id}`, {
+      username: userName,
+      phonenumber: phoneNumber,
+      team,
+    });
+    await getUsers(page, search);
+  };
   useEffect(() => {
     getUsers(page,search);
   }, [page,search, getUsers]);
@@ -80,7 +88,7 @@ function PageFive() {
             <SearchBar onSearch={handleSearch} />
           </div>
           <div>
-            <UsersTable users={users} page={page} totalPages={totalPages} currentSearch={search} onPageChange={(newPage: any) => getUsers(newPage,search)} onDelete={handleDelete} />
+            <UsersTable users={users} page={page} totalPages={totalPages} currentSearch={search} onPageChange={(newPage: any) => getUsers(newPage,search)} onDelete={handleDelete} onUpdate={handleUpdate} />
           </div>
         </div>
     </PluginPage>
