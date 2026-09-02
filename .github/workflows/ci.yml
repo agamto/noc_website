@@ -147,7 +147,7 @@ jobs:
         env:
           RESOLVED_MATRIX: ${{ steps.resolve-versions.outputs.matrix }}
         run: |
-          matrix=$(jq -c '. + [{"NAME":"grafana-oss","VERSION":"12.4"},{"NAME":"grafana-oss","VERSION":"13.2"}]' <<< "$RESOLVED_MATRIX")
+          matrix=$(jq -c '. + [{"NAME":"grafana-oss","VERSION":"12.4.3"},{"NAME":"grafana-oss","VERSION":"13.0.2"}]' <<< "$RESOLVED_MATRIX")
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
 
   playwright-tests:

@@ -4,9 +4,6 @@ export const PLUGIN_BASE_URL = `/a/${pluginJson.id}`;
 
 export enum ROUTES {
   Main = 'main',
-  Two = 'two',
-  Three = 'three',
-  Four = 'four',
   Five = 'five',
   CONTACTS = 'contacts'
 }
