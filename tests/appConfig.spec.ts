@@ -7,7 +7,7 @@ test('should be possible to save app configuration', async ({ appConfigPage, pag
   //await page.getByRole('button', { name: /reset/i }).click();
 
   // enter some valid values
-  await page.getByRole('textbox', { name: 'password' }).fill('test password');
+  await page.locator('#password').fill('test password');
   await page.getByRole('textbox', { name: 'port' }).clear();
   await page.getByRole('textbox', { name: 'port' }).fill('5432');
   await page.getByRole('textbox', { name: 'dbname' }).clear();

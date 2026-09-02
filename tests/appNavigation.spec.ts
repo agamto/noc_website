@@ -3,7 +3,7 @@ import { ROUTES } from '../src/constants';
 
 test.describe('navigating app', () => {
   test('main page', async ({ gotoPage, page }) => {
-    await gotoPage(`/${ROUTES.One}`);
+    await gotoPage(`/${ROUTES.Main}`);
     await expect(page.getByText('main page')).toBeVisible();
   });
 
