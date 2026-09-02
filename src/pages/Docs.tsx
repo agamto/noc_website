@@ -134,7 +134,7 @@ function Docs() {
         <main className={styles.content}>
           <div className={styles.createRow}>
             <h1>Documentation Center</h1>
-            <Button onClick={() => setIsCreatingDocument(!isCreatingDocument)}>
+            <Button data-testid="add-new-document" onClick={() => setIsCreatingDocument(!isCreatingDocument)}>
               {isCreatingDocument ? 'Close new document' : 'Add new document'}
             </Button>
           </div>
@@ -148,7 +148,7 @@ function Docs() {
                   onChange={(event) => setNewName(event.currentTarget.value)}
                 />
               </Field>
-              <Button type="submit">Create document</Button>
+              <Button type="submit" data-testid="create-document">Create document</Button>
             </form>
           )}
           <Field label="Import Markdown">
@@ -164,7 +164,7 @@ function Docs() {
           {importedDocuments.length > 0 && (
             <div className={styles.batchImport}>
               <p>{importedDocuments.map(({ name }) => name).join(', ')}</p>
-              <Button onClick={saveImportedDocuments}>Save imported documents</Button>
+              <Button data-testid="save-imported-documents" onClick={saveImportedDocuments}>Save imported documents</Button>
             </div>
           )}
           <div className={styles.folderControls}>
@@ -180,7 +180,7 @@ function Docs() {
               <Field label="New folder">
                 <Input aria-label="New folder" value={newFolder} onChange={(event) => setNewFolder(event.currentTarget.value)} />
               </Field>
-              <Button type="submit">Create folder</Button>
+              <Button type="submit" data-testid="create-folder">Create folder</Button>
             </form>
           </div>
           {importedName && (
@@ -192,7 +192,7 @@ function Docs() {
                   onChange={(event) => setImportedName(event.currentTarget.value)}
                 />
               </Field>
-              <Button type="submit">Open imported document</Button>
+              <Button type="submit" data-testid="open-imported-document">Open imported document</Button>
             </form>
           )}
           <Field label="Search documents">

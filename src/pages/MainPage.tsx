@@ -14,10 +14,10 @@ function PageOne() {
       <div className={s.mainContent}>
         main page
         <div className={s.appLinks}>
-          <LinkButton className={s.appLink} href={prefixRoute(ROUTES.CONTACTS)}>
+          <LinkButton data-testid="main-contacts-link" className={s.appLink} href={prefixRoute(ROUTES.CONTACTS)}>
             to contacts
           </LinkButton>
-          <LinkButton className={s.appLink} href={prefixRoute(ROUTES.DOCS)}>
+          <LinkButton data-testid="main-docs-link" className={s.appLink} href={prefixRoute(ROUTES.DOCS)}>
             to docs
           </LinkButton>
         </div>

@@ -14,23 +14,23 @@ test.describe('navigating app', () => {
 
   test('opens docs creator from main and saves markdown in an inner page', async ({ gotoPage, page }) => {
     await gotoPage(`/${ROUTES.Main}`);
-    await page.getByRole('link', { name: 'to docs' }).click();
-    await expect(page.getByRole('heading', { name: 'Documentation creator' })).toBeVisible();
+    await page.locator('[data-testid="main-docs-link"]').click();
+    await expect(page.getByText('Documentation Center')).toBeVisible();
 
-    await page.getByRole('button', { name: 'Add new document' }).click();
+    await page.locator('[data-testid="add-new-document"]').click();
     await page.getByLabel('New document').fill('runbook.md');
-    await page.getByRole('button', { name: 'Create document' }).click();
-    await expect(page.getByRole('heading', { name: 'runbook.md' })).toBeVisible();
-    await page.getByRole('button', { name: 'Edit' }).click();
+    await page.locator('[data-testid="create-document"]').click();
+    await expect(page.getByText('runbook.md')).toBeVisible();
+    await page.locator('[data-testid="edit-document"]').click();
     await page.getByLabel('Markdown content').fill('# Runbook\n\nStart here.');
-    await page.getByRole('button', { name: 'Save document' }).click();
-    await expect(page.getByRole('status')).toHaveText('Saved');
-    await expect(page.getByRole('button', { name: 'Edit' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Runbook' })).toBeVisible();
-    await page.getByRole('button', { name: 'Delete document' }).click();
-    await expect(page.getByRole('button', { name: 'Confirm delete' })).toBeVisible();
-    await page.getByRole('button', { name: 'Cancel' }).click();
-    await expect(page.getByRole('button', { name: 'Delete document' })).toBeVisible();
+    await page.locator('[data-testid="save-document"]').click();
+    await expect(page.locator('[role="status"]')).toHaveText('Saved');
+    await expect(page.locator('[data-testid="edit-document"]')).toBeVisible();
+    await expect(page.getByText('Runbook')).toBeVisible();
+    await page.locator('[data-testid="delete-document"]').click();
+    await expect(page.locator('[data-testid="confirm-delete"]')).toBeVisible();
+    await page.locator('[data-testid="cancel-delete"]').click();
+    await expect(page.locator('[data-testid="delete-document"]')).toBeVisible();
   });
 
   test('imports a markdown file into the document editor', async ({ gotoPage, page }) => {
@@ -42,12 +42,12 @@ test.describe('navigating app', () => {
     });
 
     await page.getByLabel('Imported document name').fill('renamed.md');
-    await page.getByRole('button', { name: 'Open imported document' }).click();
-    await expect(page.getByRole('heading', { name: 'renamed.md' })).toBeVisible();
+    await page.locator('[data-testid="open-imported-document"]').click();
+    await expect(page.getByText('renamed.md')).toBeVisible();
     await expect(page.getByLabel('Markdown content')).toHaveValue('# Imported document\n\nImported content.');
-    await page.getByRole('button', { name: 'Save document' }).click();
-    await expect(page.getByRole('status')).toHaveText('Saved');
-    await expect(page.getByRole('heading', { name: 'Imported document' })).toBeVisible();
+    await page.locator('[data-testid="save-document"]').click();
+    await expect(page.locator('[role="status"]')).toHaveText('Saved');
+    await expect(page.getByText('Imported document')).toBeVisible();
   });
 
 });

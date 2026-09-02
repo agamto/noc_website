@@ -157,19 +157,19 @@ function DocsEditor() {
             />
             {isEditing ? (
               <>
-                <Button onClick={saveDocument}>Save document</Button>
-                <Button variant="secondary" onClick={exitEdit}>Exit edit</Button>
+                <Button data-testid="save-document" onClick={saveDocument}>Save document</Button>
+                <Button data-testid="exit-edit" variant="secondary" onClick={exitEdit}>Exit edit</Button>
               </>
             ) : (
               <>
-                <Button onClick={() => setIsEditing(true)}>Edit</Button>
+                <Button data-testid="edit-document" onClick={() => setIsEditing(true)}>Edit</Button>
                 {isDeletePending ? (
                   <>
-                    <Button onClick={deleteDocument}>Confirm delete</Button>
-                    <Button variant="secondary" onClick={() => setIsDeletePending(false)}>Cancel</Button>
+                    <Button data-testid="confirm-delete" onClick={deleteDocument}>Confirm delete</Button>
+                    <Button data-testid="cancel-delete" variant="secondary" onClick={() => setIsDeletePending(false)}>Cancel</Button>
                   </>
                 ) : (
-                  <Button variant="destructive" onClick={() => setIsDeletePending(true)}>Delete document</Button>
+                  <Button data-testid="delete-document" variant="destructive" onClick={() => setIsDeletePending(true)}>Delete document</Button>
                 )}
               </>
             )}
