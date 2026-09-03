@@ -47,7 +47,9 @@ function Docs() {
     }
     const filename = name.endsWith('.md') ? name : `${name}.md`;
     const path = selectedFolder ? `${selectedFolder}/${filename}` : filename;
-    window.location.assign(prefixRoute(`${ROUTES.DOCS}/${encodeDocumentPath(path)}`));
+    navigate(prefixRoute(`${ROUTES.DOCS}/${encodeDocumentPath(path)}`), {
+      state: { newDocument: true },
+    });
   };
 
   const createFolder = async (event: FormEvent) => {

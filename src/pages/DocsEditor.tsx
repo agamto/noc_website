@@ -9,7 +9,7 @@ import { prefixRoute } from '../utils/utils.routing';
 import { ROUTES } from '../constants';
 
 type Document = { content: string };
-type EditorLocationState = { importedContent?: string };
+type EditorLocationState = { importedContent?: string; newDocument?: boolean };
 
 const encodeDocumentPath = (path: string) => path.split('/').map(encodeURIComponent).join('/');
 
@@ -49,11 +49,21 @@ function DocsEditor() {
       .catch(() => setFolderDocuments([]));
 
     const importedContent = (location.state as EditorLocationState | null)?.importedContent;
+    const isNewDocument = (location.state as EditorLocationState | null)?.newDocument;
     if (importedContent !== undefined) {
       setContent(importedContent);
       setSavedContent('');
       setIsEditing(true);
       setStatus('Imported. Save to store this document.');
+      window.history.replaceState({}, document.title);
+      return;
+    }
+
+    if (isNewDocument) {
+      setContent('');
+      setSavedContent('');
+      setIsEditing(true);
+      setStatus('New document');
       window.history.replaceState({}, document.title);
       return;
     }

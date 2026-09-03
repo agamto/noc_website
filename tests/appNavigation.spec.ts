@@ -21,12 +21,9 @@ test.describe('navigating app', () => {
     await page.getByLabel('New document').fill('runbook.md');
     await page.locator('[data-testid="create-document"]').click({ force: true });
     await expect(page.getByText('runbook.md')).toBeVisible();
-      const editDocument = page.locator('[data-testid="edit-document"]');
-      await expect(editDocument).toBeVisible({ timeout: 3000 });
-      await editDocument.dispatchEvent('click');
-      const markdownContent = page.locator('textarea[aria-label="Markdown content"]');
-      await expect(markdownContent).toBeVisible({ timeout: 3000 });
-      await markdownContent.fill('# Runbook\n\nStart here.', { timeout: 3000 });
+    const markdownContent = page.locator('textarea[aria-label="Markdown content"]');
+    await expect(markdownContent).toBeVisible({ timeout: 3000 });
+    await markdownContent.fill('# Runbook\n\nStart here.', { timeout: 3000 });
     await page.locator('[data-testid="save-document"]').click({ force: true });
     await expect(page.locator('[role="status"]')).toHaveText('Saved');
     await expect(page.locator('[data-testid="edit-document"]')).toBeVisible();
