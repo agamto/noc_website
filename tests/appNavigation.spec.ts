@@ -26,7 +26,7 @@ test.describe('navigating app', () => {
     await page.locator('[data-testid="save-document"]').click();
     await expect(page.locator('[role="status"]')).toHaveText('Saved');
     await expect(page.locator('[data-testid="edit-document"]')).toBeVisible();
-    await expect(page.getByText('Runbook')).toBeVisible();
+    await expect(page.locator('[data-testid="markdown-preview"] h1')).toHaveText('Runbook');
     await page.locator('[data-testid="delete-document"]').click();
     await expect(page.locator('[data-testid="confirm-delete"]')).toBeVisible();
     await page.locator('[data-testid="cancel-delete"]').click();
@@ -47,7 +47,7 @@ test.describe('navigating app', () => {
     await expect(page.getByLabel('Markdown content')).toHaveValue('# Imported document\n\nImported content.');
     await page.locator('[data-testid="save-document"]').click();
     await expect(page.locator('[role="status"]')).toHaveText('Saved');
-    await expect(page.getByText('Imported document')).toBeVisible();
+    await expect(page.locator('[data-testid="markdown-preview"] h1')).toHaveText('Imported document');
   });
 
 });
