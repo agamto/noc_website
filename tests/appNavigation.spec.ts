@@ -35,7 +35,7 @@ test.describe('navigating app', () => {
 
   test('imports a markdown file into the document editor', async ({ gotoPage, page }) => {
     await gotoPage(`/${ROUTES.DOCS}`);
-    await page.getByLabel('Import Markdown').setInputFiles({
+    await page.locator('#import-markdown-file').setInputFiles({
       name: 'imported.md',
       mimeType: 'text/markdown',
       buffer: Buffer.from('# Imported document\n\nImported content.'),

@@ -149,6 +149,8 @@ function Docs() {
           <Field label="Import Markdown">
             <Input
               aria-label="Import Markdown"
+              data-testid="import-markdown"
+              id="import-markdown-file"
               type="file"
               multiple
               accept=".md,text/markdown"

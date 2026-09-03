@@ -7,19 +7,22 @@ type AppTestFixture = {
 };
 
 export const test = base.extend<AppTestFixture>({
-  appConfigPage: async ({ gotoAppConfigPage }, use) => {
+  appConfigPage: async ({ gotoAppConfigPage, page }, use) => {
     const configPage = await gotoAppConfigPage({
       pluginId: pluginJson.id,
     });
+    await page.keyboard.press('Escape');
     await use(configPage);
   },
-  gotoPage: async ({ gotoAppPage }, use) => {
-    await use((path) =>
-      gotoAppPage({
+  gotoPage: async ({ gotoAppPage, page }, use) => {
+    await use(async (path) => {
+      const appPage = await gotoAppPage({
         path,
         pluginId: pluginJson.id,
-      })
-    );
+      });
+      await page.keyboard.press('Escape');
+      return appPage;
+    });
   },
 });
 
