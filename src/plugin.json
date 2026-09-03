@@ -46,6 +46,14 @@
     },
     {
       "type": "page",
+      "name": "dashboards",
+      "path": "/a/%PLUGIN_ID%/dashboards",
+      "role": "Admin",
+      "addToNav": true,
+      "defaultNav": false
+    },
+    {
+      "type": "page",
       "name": "docs editor",
       "path": "/a/%PLUGIN_ID%/docs/:name",
       "role": "Admin",

@@ -129,7 +129,7 @@ const AppConfig = ({ plugin }: AppConfigProps) => {
           />
         </Field>
         <div className={s.marginTop}>
-          <Button type="submit" data-testid="save-db-settings" disabled={isDBSubmitDisabled}>
+          <Button title="Save DB settings" type="submit" data-testid="save-db-settings" disabled={isDBSubmitDisabled}>
             Save DB settings
           </Button>
         </div>

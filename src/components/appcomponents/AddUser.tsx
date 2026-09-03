@@ -65,7 +65,7 @@ export const AddUser: React.FC<Props> = ({ addNewUser }) => {
                         />
                     </Field>
                     <div className={s.marginTop}>
-                      <Button type='submit' disabled={isSubmitDisabled}>
+                      <Button title="Save User" type='submit' disabled={isSubmitDisabled}>
                         Save User
                       </Button>
                     </div>

@@ -25,6 +25,7 @@ services:
 
     environment:
       NODE_ENV: development
+      GF_SECURITY_ALLOW_EMBEDDING: 'true'
       GF_LOG_FILTERS: plugin.main-noc-app:debug
       GF_LOG_LEVEL: debug
       GF_DATAPROXY_LOGGING: 1

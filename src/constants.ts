@@ -6,5 +6,6 @@ export enum ROUTES {
   Main = 'main',
   Five = 'five',
   CONTACTS = 'contacts',
-  DOCS = 'docs'
+  DOCS = 'docs',
+  DASHBOARDS = 'dashboards'
 }

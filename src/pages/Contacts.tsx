@@ -74,12 +74,12 @@ function PageFive() {
   return (
     <PluginPage layout={PageLayoutType.Canvas}>
         <div className={s.container}>
-          <LinkButton href={prefixRoute(ROUTES.Main)}>
+        <LinkButton className={s.backButton} title="to main page" href={prefixRoute(ROUTES.Main)}>
             to main page
           </LinkButton>
           <div className={s.content}>contacts</div>
           <div className={s.centered}>
-            <button className={s.addUser} onClick={handleClick}> {!isVisible ? "add user" : "close"} </button>
+            <button title={!isVisible ? "add user" : "close"} className={s.addUser} onClick={handleClick}> {!isVisible ? "add user" : "close"} </button>
           </div>
           <div>
           {isVisible &&<AddUser addNewUser={handleAdd}></AddUser>}
@@ -110,6 +110,11 @@ const getStyles = (theme: GrafanaTheme2) => ({
     width: 100vw;
     max-width: 100%;
     heigh: 100vh;
+  `,
+  backButton: css`
+      position: absolute;
+      top: ${theme.spacing(2)};
+      left: ${theme.spacing(2)};
   `,
   content: css`
     margin-bottom: ${theme.spacing(5)};

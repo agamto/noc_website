@@ -2,7 +2,7 @@ import React, { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 import { css } from '@emotion/css';
 import { GrafanaTheme2 } from '@grafana/data';
 import { getBackendSrv, PluginPage } from '@grafana/runtime';
-import { Button, Field, Input, Select, useStyles2 } from '@grafana/ui';
+import { LinkButton, Button, Combobox, Field, Input, useStyles2 } from '@grafana/ui';
 import { Link, useNavigate } from 'react-router-dom';
 import { prefixRoute } from '../utils/utils.routing';
 import { ROUTES } from '../constants';
@@ -53,7 +53,9 @@ function Docs() {
   const createFolder = async (event: FormEvent) => {
     event.preventDefault();
     const folder = newFolder.trim().replace(/[^a-zA-Z0-9._/-]/g, '-');
-    if (!folder) return;
+    if (!folder) {
+      return;
+    }
     await getBackendSrv().post('/api/plugins/main-noc-app/resources/docs/folders', { folder });
     setFolders([...folders, folder]);
     setSelectedFolder(folder);
@@ -112,29 +114,22 @@ function Docs() {
     });
   };
 
-  const normalizedSearch = searchTerm.trim().toLowerCase();
-  const visibleDocuments = documents
-    .filter((name) => name.toLowerCase().includes(normalizedSearch))
-    .sort((firstName, secondName) => {
-      const firstStartsWith = firstName.toLowerCase().startsWith(normalizedSearch);
-      const secondStartsWith = secondName.toLowerCase().startsWith(normalizedSearch);
-      return Number(secondStartsWith) - Number(firstStartsWith);
-    });
+  const searchWords = searchTerm.toLowerCase().trim().split(/\s+/).filter(Boolean);
+  const visibleDocuments = documents.filter((name) => {
+    const normalizedName = name.toLowerCase();
+    return searchWords.every((word) => normalizedName.includes(word));
+  });
 
   return (
     <PluginPage>
       <div className={styles.page}>
-        <Button
-          className={styles.backButton}
-          variant="secondary"
-          onClick={() => window.location.assign(prefixRoute(ROUTES.Main))}
-        >
-          Back to main
-        </Button>
+        <LinkButton className={styles.backButton} title="to main page" href={prefixRoute(ROUTES.Main)}>
+            to main page
+        </LinkButton>
         <main className={styles.content}>
           <div className={styles.createRow}>
             <h1>Documentation Center</h1>
-            <Button data-testid="add-new-document" onClick={() => setIsCreatingDocument(!isCreatingDocument)}>
+            <Button title={isCreatingDocument ? 'Close new document' : 'Add new document'} data-testid="add-new-document" onClick={() => setIsCreatingDocument(!isCreatingDocument)}>
               {isCreatingDocument ? 'Close new document' : 'Add new document'}
             </Button>
           </div>
@@ -148,7 +143,7 @@ function Docs() {
                   onChange={(event) => setNewName(event.currentTarget.value)}
                 />
               </Field>
-              <Button type="submit" data-testid="create-document">Create document</Button>
+              <Button title="Create document" type="submit" data-testid="create-document">Create document</Button>
             </form>
           )}
           <Field label="Import Markdown">
@@ -164,12 +159,12 @@ function Docs() {
           {importedDocuments.length > 0 && (
             <div className={styles.batchImport}>
               <p>{importedDocuments.map(({ name }) => name).join(', ')}</p>
-              <Button data-testid="save-imported-documents" onClick={saveImportedDocuments}>Save imported documents</Button>
+              <Button title="Save imported documents" data-testid="save-imported-documents" onClick={saveImportedDocuments}>Save imported documents</Button>
             </div>
           )}
           <div className={styles.folderControls}>
             <Field label="Folder">
-              <Select
+              <Combobox
                 aria-label="Folder"
                 options={[{ label: 'Root', value: '' }, ...folders.map((folder) => ({ label: folder, value: folder }))]}
                 value={selectedFolder}
@@ -180,7 +175,7 @@ function Docs() {
               <Field label="New folder">
                 <Input aria-label="New folder" value={newFolder} onChange={(event) => setNewFolder(event.currentTarget.value)} />
               </Field>
-              <Button type="submit" data-testid="create-folder">Create folder</Button>
+              <Button title="Create folder" type="submit" data-testid="create-folder">Create folder</Button>
             </form>
           </div>
           {importedName && (
@@ -192,7 +187,7 @@ function Docs() {
                   onChange={(event) => setImportedName(event.currentTarget.value)}
                 />
               </Field>
-              <Button type="submit" data-testid="open-imported-document">Open imported document</Button>
+              <Button title="Open imported document" type="submit" data-testid="open-imported-document">Open imported document</Button>
             </form>
           )}
           <Field label="Search documents">
@@ -211,6 +206,7 @@ function Docs() {
                   <Link
                     className={styles.documentCard}
                     key={name}
+                    title={name}
                     to={prefixRoute(`${ROUTES.DOCS}/${encodeDocumentPath(selectedFolder ? `${selectedFolder}/${name}` : name)}`)}
                   >
                     <span className={styles.fileBadge}>MD</span>
@@ -299,12 +295,13 @@ const getStyles = (theme: GrafanaTheme2) => ({
     background: ${theme.colors.background.secondary};
     color: ${theme.colors.text.primary};
     text-decoration: none;
-    transition: border-color 120ms ease, box-shadow 120ms ease;
+    transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
 
     &:hover,
     &:focus-visible {
       border-color: ${theme.colors.border.medium};
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
+      transform: translateY(-2px);
       text-decoration: none;
     }
   `,

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { css } from '@emotion/css';
 import { GrafanaTheme2 } from '@grafana/data';
 import { getBackendSrv, PluginPage } from '@grafana/runtime';
-import { Button, Select, useStyles2 } from '@grafana/ui';
+import { Button, Combobox, useStyles2 } from '@grafana/ui';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { marked } from 'marked';
 import { prefixRoute } from '../utils/utils.routing';
@@ -65,7 +65,7 @@ function DocsEditor() {
         setSavedContent(document.content);
       })
       .catch(() => setStatus('New document'));
-  }, [path, location.state]);
+  }, [currentFolder, path, location.state]);
 
   const saveDocument = async () => {
     setStatus('Saving...');
@@ -98,7 +98,9 @@ function DocsEditor() {
   };
 
   const moveDocument = async (folder: string) => {
-    if (folder === currentFolder) return;
+    if (folder === currentFolder) {
+      return;
+    }
     try {
       await getBackendSrv().post('/api/plugins/main-noc-app/resources/docs/move', { name: path, folder });
       const destination = folder ? `${folder}/${name}` : name;
@@ -110,7 +112,9 @@ function DocsEditor() {
   };
 
   const openDocument = (documentName: string) => {
-    if (!documentName || documentName === name) return;
+    if (!documentName || documentName === name) {
+      return;
+    }
     const documentPath = currentFolder ? `${currentFolder}/${documentName}` : documentName;
     navigate(prefixRoute(`${ROUTES.DOCS}/${encodeDocumentPath(documentPath)}`));
   };
@@ -121,7 +125,7 @@ function DocsEditor() {
     <PluginPage>
       <div className={styles.page}>
         <div className={styles.header}>
-          <Button variant="secondary" onClick={() => navigate(prefixRoute(ROUTES.DOCS))}>
+          <Button title="Back to documents" variant="secondary" onClick={() => navigate(prefixRoute(ROUTES.DOCS))}>
             Back to documents
           </Button>
           <h1>{name}</h1>
@@ -142,13 +146,13 @@ function DocsEditor() {
                 LTR
               </Button>
             </div>
-            <Select
+            <Combobox
               aria-label="Move document to folder"
               options={[{ label: 'Root', value: '' }, ...folders.map((folder) => ({ label: folder, value: folder }))]}
               value={moveFolder}
               onChange={(option) => moveDocument(option?.value ?? '')}
             />
-            <Select
+            <Combobox
               aria-label="Choose document in folder"
               options={folderDocuments.map((documentName) => ({ label: documentName, value: documentName }))}
               value={name}
@@ -157,19 +161,19 @@ function DocsEditor() {
             />
             {isEditing ? (
               <>
-                <Button data-testid="save-document" onClick={saveDocument}>Save document</Button>
-                <Button data-testid="exit-edit" variant="secondary" onClick={exitEdit}>Exit edit</Button>
+                <Button title="Save document" data-testid="save-document" onClick={saveDocument}>Save document</Button>
+                <Button title="Exit edit" data-testid="exit-edit" variant="secondary" onClick={exitEdit}>Exit edit</Button>
               </>
             ) : (
               <>
-                <Button data-testid="edit-document" onClick={() => setIsEditing(true)}>Edit</Button>
+                <Button title="Edit" data-testid="edit-document" onClick={() => setIsEditing(true)}>Edit</Button>
                 {isDeletePending ? (
                   <>
-                    <Button data-testid="confirm-delete" onClick={deleteDocument}>Confirm delete</Button>
-                    <Button data-testid="cancel-delete" variant="secondary" onClick={() => setIsDeletePending(false)}>Cancel</Button>
+                    <Button title="Confirm delete" data-testid="confirm-delete" onClick={deleteDocument}>Confirm delete</Button>
+                    <Button title="Cancel" data-testid="cancel-delete" variant="secondary" onClick={() => setIsDeletePending(false)}>Cancel</Button>
                   </>
                 ) : (
-                  <Button data-testid="delete-document" variant="destructive" onClick={() => setIsDeletePending(true)}>Delete document</Button>
+                  <Button title="Delete document" data-testid="delete-document" variant="destructive" onClick={() => setIsDeletePending(true)}>Delete document</Button>
                 )}
               </>
             )}
