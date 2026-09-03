@@ -21,8 +21,12 @@ test.describe('navigating app', () => {
     await page.getByLabel('New document').fill('runbook.md');
     await page.locator('[data-testid="create-document"]').click({ force: true });
     await expect(page.getByText('runbook.md')).toBeVisible();
-    await page.locator('[data-testid="edit-document"]').click({ force: true });
-    await page.locator('[data-testid="markdown-content"]').fill('# Runbook\n\nStart here.', { timeout: 3000 });
+      const editDocument = page.locator('[data-testid="edit-document"]');
+      await expect(editDocument).toBeVisible({ timeout: 3000 });
+      await editDocument.dispatchEvent('click');
+      const markdownContent = page.locator('textarea[aria-label="Markdown content"]');
+      await expect(markdownContent).toBeVisible({ timeout: 3000 });
+      await markdownContent.fill('# Runbook\n\nStart here.', { timeout: 3000 });
     await page.locator('[data-testid="save-document"]').click({ force: true });
     await expect(page.locator('[role="status"]')).toHaveText('Saved');
     await expect(page.locator('[data-testid="edit-document"]')).toBeVisible();
@@ -44,7 +48,7 @@ test.describe('navigating app', () => {
     await page.getByLabel('Imported document name').fill('renamed.md');
     await page.locator('[data-testid="open-imported-document"]').click({ force: true });
     await expect(page.getByText('renamed.md')).toBeVisible();
-    await expect(page.locator('[data-testid="markdown-content"]')).toHaveValue('# Imported document\n\nImported content.');
+      await expect(page.locator('textarea[aria-label="Markdown content"]')).toHaveValue('# Imported document\n\nImported content.');
       await page.locator('[data-testid="save-document"]').click({ force: true });
     await expect(page.locator('[role="status"]')).toHaveText('Saved');
     await expect(page.locator('[data-testid="markdown-preview"] h1')).toHaveText('Imported document');
