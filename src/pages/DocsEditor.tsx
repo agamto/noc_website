@@ -183,6 +183,7 @@ function DocsEditor() {
         {isEditing ? (
           <textarea
             aria-label="Markdown content"
+            data-testid="markdown-content"
             dir={textDirection}
             className={styles.editor}
             rows={24}
