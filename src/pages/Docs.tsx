@@ -243,7 +243,7 @@ const getStyles = (theme: GrafanaTheme2) => ({
     left: ${theme.spacing(2)};
   `,
   content: css`
-    width: min(100%, 760px);
+    width: min(100vw, 1400px);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -286,15 +286,16 @@ const getStyles = (theme: GrafanaTheme2) => ({
     @media (max-width: 900px) {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+
   `,
   documentCard: css`
     box-sizing: border-box;
-    min-height: 140px;
+    min-height: 180px;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     justify-content: space-between;
-    padding: ${theme.spacing(2)};
+    padding: ${theme.spacing(3)};
     border: 1px solid ${theme.colors.border.weak};
     background: ${theme.colors.background.secondary};
     color: ${theme.colors.text.primary};
