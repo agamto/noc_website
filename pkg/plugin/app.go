@@ -32,7 +32,7 @@ type App struct {
 func NewApp(_ context.Context, settings backend.AppInstanceSettings) (instancemgmt.Instance, error) {
 	dataPath := os.Getenv("GF_PATHS_DATA")
 	if dataPath == "" {
-		dataPath = "/var/lib/grafana"
+		dataPath = os.TempDir()
 	}
 	docsDir := filepath.Join(dataPath, "plugins", "main-noc-app", "docs")
 	if err := os.MkdirAll(docsDir, 0o750); err != nil {
