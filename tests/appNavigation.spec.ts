@@ -27,11 +27,14 @@ test.describe('navigating app', () => {
       const markdownContent = page.locator('textarea[aria-label="Markdown content"]');
       await expect(markdownContent).toBeVisible({ timeout: 3000 });
       await markdownContent.fill('# Runbook\n\nStart here.', { timeout: 3000 });
-      const saveRequest = page.waitForResponse((response) =>
-        response.request().method() === 'PUT' && response.url().includes('/api/plugins/main-noc-app/resources/docs/runbook.md')
-      );
-      await page.locator('[data-testid="save-document"]').click({ force: true });
-      await expect((await saveRequest).status()).toBe(200);
+    const [saveResponse] = await Promise.all([
+      page.waitForResponse(
+        (response) => response.request().method() === 'PUT' && response.url().includes('/api/plugins/main-noc-app/resources/docs/'),
+        { timeout: 3000 }
+      ),
+      page.locator('[data-testid="save-document"]').click({ force: true }),
+    ]);
+    expect(saveResponse.status()).toBe(200);
     await expect(page.locator('[role="status"]')).toHaveText('Saved');
     await expect(page.locator('[data-testid="edit-document"]')).toBeVisible();
     await expect(page.locator('[data-testid="markdown-preview"] h1')).toHaveText('Runbook');
