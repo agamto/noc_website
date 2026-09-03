@@ -22,8 +22,9 @@
   "includes": [
     {
       "type": "page",
-      "name": "Page One",
-      "path": "/a/%PLUGIN_ID%/one",
+      "name": "main page",
+      "path": "/a/%PLUGIN_ID%/main",
+      "role": "Admin",
       "addToNav": true,
       "defaultNav": true
     },
@@ -31,7 +32,32 @@
       "type": "page",
       "name": "contacts",
       "path": "/a/%PLUGIN_ID%/contacts",
+      "role": "Admin",
       "addToNav": true,
+      "defaultNav": false
+    },
+    {
+      "type": "page",
+      "name": "docs",
+      "path": "/a/%PLUGIN_ID%/docs",
+      "role": "Admin",
+      "addToNav": true,
+      "defaultNav": false
+    },
+    {
+      "type": "page",
+      "name": "dashboards",
+      "path": "/a/%PLUGIN_ID%/dashboards",
+      "role": "Admin",
+      "addToNav": true,
+      "defaultNav": false
+    },
+    {
+      "type": "page",
+      "name": "docs editor",
+      "path": "/a/%PLUGIN_ID%/docs/:name",
+      "role": "Admin",
+      "addToNav": false,
       "defaultNav": false
     },
     {

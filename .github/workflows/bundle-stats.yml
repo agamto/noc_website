@@ -24,4 +24,24 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: grafana/plugin-actions/bundle-size@main # zizmor: ignore[unpinned-uses] provided by grafana
+      - name: Check for main branch stats artifact
+        id: check-main-stats
+        if: ${{ github.event_name == 'pull_request' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_NAME: main-branch-stats
+        run: |
+          artifact_count=$(gh api \
+            "/repos/${GITHUB_REPOSITORY}/actions/artifacts?name=${ARTIFACT_NAME}&per_page=100" \
+            --jq '[.artifacts[] | select(.name == env.ARTIFACT_NAME and .expired == false)] | length')
+
+          if [ "$artifact_count" -gt 0 ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::warning title=Bundle size skipped::The main branch stats artifact is missing or expired."
+          fi
+
+      - name: Compare bundle size
+        if: ${{ github.event_name != 'pull_request' || steps.check-main-stats.outputs.available == 'true' }}
+        uses: grafana/plugin-actions/bundle-size@main # zizmor: ignore[unpinned-uses] provided by grafana

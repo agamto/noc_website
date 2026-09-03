@@ -3,6 +3,8 @@ package plugin
 import (
 	"context"
 	"net/http"
+	"os"
+	"path/filepath"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
@@ -18,15 +20,26 @@ var (
 	_ instancemgmt.InstanceDisposer = (*App)(nil)
 	_ backend.CheckHealthHandler    = (*App)(nil)
 )
+
 // App is an example app plugin with a backend which can respond to data queries.
 type App struct {
 	backend.CallResourceHandler
 	settings backend.AppInstanceSettings
+	docsDir  string
 }
 
 // NewApp creates a new example *App instance.
 func NewApp(_ context.Context, settings backend.AppInstanceSettings) (instancemgmt.Instance, error) {
-	var app App
+	dataPath := os.Getenv("GF_PATHS_DATA")
+	if dataPath == "" {
+		dataPath = os.TempDir()
+	}
+	docsDir := filepath.Join(dataPath, "plugins", "main-noc-app", "docs")
+	if err := os.MkdirAll(docsDir, 0o750); err != nil {
+		return nil, err
+	}
+
+	app := App{docsDir: docsDir}
 	app.settings = settings
 	// Use a httpadapter (provided by the SDK) for resource calls. This allows us
 	// to use a *http.ServeMux for resource calls, so we can map multiple routes
