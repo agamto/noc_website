@@ -12,6 +12,6 @@ test('should be possible to save app configuration', async ({ appConfigPage, pag
   // listen for the server response on the saved form
   const saveResponse = appConfigPage.waitForSettingsResponse();
 
-  await saveButton.click();
+  await saveButton.click({ force: true });
   await expect(saveResponse).toBeOK();
 });

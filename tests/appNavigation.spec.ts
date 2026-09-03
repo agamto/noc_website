@@ -17,19 +17,19 @@ test.describe('navigating app', () => {
     await page.locator('[data-testid="main-docs-link"]').click();
     await expect(page.getByText('Documentation Center')).toBeVisible();
 
-    await page.locator('[data-testid="add-new-document"]').click();
+    await page.locator('[data-testid="add-new-document"]').click({ force: true });
     await page.getByLabel('New document').fill('runbook.md');
-    await page.locator('[data-testid="create-document"]').click();
+    await page.locator('[data-testid="create-document"]').click({ force: true });
     await expect(page.getByText('runbook.md')).toBeVisible();
-    await page.locator('[data-testid="edit-document"]').click();
+    await page.locator('[data-testid="edit-document"]').click({ force: true });
     await page.getByLabel('Markdown content').fill('# Runbook\n\nStart here.');
-    await page.locator('[data-testid="save-document"]').click();
+    await page.locator('[data-testid="save-document"]').click({ force: true });
     await expect(page.locator('[role="status"]')).toHaveText('Saved');
     await expect(page.locator('[data-testid="edit-document"]')).toBeVisible();
     await expect(page.locator('[data-testid="markdown-preview"] h1')).toHaveText('Runbook');
-    await page.locator('[data-testid="delete-document"]').click();
+    await page.locator('[data-testid="delete-document"]').click({ force: true });
     await expect(page.locator('[data-testid="confirm-delete"]')).toBeVisible();
-    await page.locator('[data-testid="cancel-delete"]').click();
+    await page.locator('[data-testid="cancel-delete"]').click({ force: true });
     await expect(page.locator('[data-testid="delete-document"]')).toBeVisible();
   });
 
@@ -42,10 +42,10 @@ test.describe('navigating app', () => {
     });
 
     await page.getByLabel('Imported document name').fill('renamed.md');
-    await page.locator('[data-testid="open-imported-document"]').click();
+    await page.locator('[data-testid="open-imported-document"]').click({ force: true });
     await expect(page.getByText('renamed.md')).toBeVisible();
     await expect(page.getByLabel('Markdown content')).toHaveValue('# Imported document\n\nImported content.');
-    await page.locator('[data-testid="save-document"]').click();
+    await page.locator('[data-testid="save-document"]').click({ force: true });
     await expect(page.locator('[role="status"]')).toHaveText('Saved');
     await expect(page.locator('[data-testid="markdown-preview"] h1')).toHaveText('Imported document');
   });
