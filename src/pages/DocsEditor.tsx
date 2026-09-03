@@ -64,7 +64,7 @@ function DocsEditor() {
         setContent(document.content);
         setSavedContent(document.content);
       })
-      .catch(() => setStatus('New document'));
+      .catch(() => setStatus((currentStatus) => currentStatus || 'New document'));
   }, [currentFolder, path, location.state]);
 
   const saveDocument = async () => {
