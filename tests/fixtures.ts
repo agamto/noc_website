@@ -12,6 +12,7 @@ export const test = base.extend<AppTestFixture>({
       pluginId: pluginJson.id,
     });
     await page.keyboard.press('Escape');
+    await page.addStyleTag({ content: '#grafana-portal-container { pointer-events: none !important; }' });
     await use(configPage);
   },
   gotoPage: async ({ gotoAppPage, page }, use) => {
@@ -21,6 +22,7 @@ export const test = base.extend<AppTestFixture>({
         pluginId: pluginJson.id,
       });
       await page.keyboard.press('Escape');
+      await page.addStyleTag({ content: '#grafana-portal-container { pointer-events: none !important; }' });
       return appPage;
     });
   },

@@ -138,7 +138,7 @@ function DocsEditor() {
           <Button title="Back to documents" variant="secondary" onClick={() => navigate(prefixRoute(ROUTES.DOCS))}>
             Back to documents
           </Button>
-          <h1>{name}</h1>
+          <h1 data-testid="document-title">{name}</h1>
           <div className={styles.headerActions}>
             <div className={styles.directionControls} aria-label="Text direction">
               <Button

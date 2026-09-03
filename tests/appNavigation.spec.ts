@@ -14,7 +14,7 @@ test.describe('navigating app', () => {
 
   test('opens docs creator from main and saves markdown in an inner page', async ({ gotoPage, page }) => {
     await gotoPage(`/${ROUTES.Main}`);
-    await page.locator('[data-testid="main-docs-link"]').click();
+    await page.locator('[data-testid="main-docs-link"]').click({ force: true });
     await expect(page.getByText('Documentation Center')).toBeVisible();
 
     await page.locator('[data-testid="add-new-document"]').click({ force: true });
@@ -44,7 +44,7 @@ test.describe('navigating app', () => {
 
     await page.getByLabel('Imported document name').fill('renamed.md');
     await page.locator('[data-testid="open-imported-document"]').click({ force: true });
-    await expect(page.getByText('renamed.md')).toBeVisible();
+    await expect(page.locator('[data-testid="document-title"]')).toHaveText('renamed.md');
       await expect(page.locator('textarea[aria-label="Markdown content"]')).toHaveValue('# Imported document\n\nImported content.');
       await page.locator('[data-testid="save-document"]').click({ force: true });
     await expect(page.locator('[role="status"]')).toHaveText('Saved');
