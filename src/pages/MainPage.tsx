@@ -13,8 +13,8 @@ function PageOne() {
   return (
     <PluginPage>
       <div className={s.mainContent}>
-        <div className={s.brand}>
-          <img src={logo} alt="NOC public cloud logo" />
+        <div className={s.brand} data-testid="main-brand">
+          <img data-testid="main-logo" src={logo} alt="NOC public cloud logo" />
           <div className={s.brandText}>NOC public cloud</div>
         </div>
         <div className={s.appLinks}>
