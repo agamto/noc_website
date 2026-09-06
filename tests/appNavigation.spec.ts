@@ -91,23 +91,25 @@ test.describe('navigating app', () => {
   await expect.poll(() => mockedListRequestCount).toBeGreaterThan(0);
     await page.getByLabel('Search documents').fill(prefix);
 
-    const savedDocuments = page.getByRole('region', { name: 'Saved documents' });
+    const savedDocuments = page.getByTestId('saved-documents');
     const rows = savedDocuments.locator('tbody tr');
     const rowsPerPage = savedDocuments.getByLabel('Rows per page');
     const pageStatus = savedDocuments.getByText(/^Page \d+ of \d+$/);
+    const previousPage = savedDocuments.getByTestId('documents-previous-page');
+    const nextPage = savedDocuments.getByTestId('documents-next-page');
 
     await expect(savedDocuments.getByText(`${prefix}-01.md`)).toBeVisible();
     await expect(pageStatus).toHaveText('Page 1 of 2');
     await expect(rows).toHaveCount(10);
     await expect(savedDocuments.getByText(nonMatchingDocument)).not.toBeVisible();
-    await expect(savedDocuments.getByRole('button', { name: 'Previous' })).toBeDisabled();
-    await expect(savedDocuments.getByRole('button', { name: 'Next' })).toBeEnabled();
+    await expect(previousPage).toBeDisabled();
+    await expect(nextPage).toBeEnabled();
 
     await rowsPerPage.selectOption('5');
     await expect(pageStatus).toHaveText('Page 1 of 3');
     await expect(rows).toHaveCount(5);
 
-    await savedDocuments.getByRole('button', { name: 'Next' }).click();
+    await nextPage.click();
     await expect(pageStatus).toHaveText('Page 2 of 3');
     await expect(savedDocuments.getByText(`${prefix}-06.md`)).toBeVisible();
     await expect(savedDocuments.getByText(`${prefix}-01.md`)).not.toBeVisible();
@@ -115,11 +117,11 @@ test.describe('navigating app', () => {
     await rowsPerPage.selectOption('10');
     await expect(pageStatus).toHaveText('Page 1 of 2');
     await expect(rows).toHaveCount(10);
-    await savedDocuments.getByRole('button', { name: 'Next' }).click();
+    await nextPage.click();
     await expect(pageStatus).toHaveText('Page 2 of 2');
     await expect(rows).toHaveCount(1);
     await expect(savedDocuments.getByText(`${prefix}-11.md`)).toBeVisible();
-    await expect(savedDocuments.getByRole('button', { name: 'Next' })).toBeDisabled();
+    await expect(nextPage).toBeDisabled();
   });
 
 });

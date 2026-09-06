@@ -26,7 +26,7 @@ export function SavedDocuments({ documentCount, documents, getDocumentUrl }: Sav
   const paginatedDocuments = documents.slice(pageStart, pageStart + pageSize);
 
   return (
-    <section aria-labelledby="saved-documents-heading">
+    <section aria-labelledby="saved-documents-heading" data-testid="saved-documents">
       <div className={styles.sectionHeader}>
         <h2 id="saved-documents-heading">Saved documents</h2>
         <span>{documents.length} shown</span>
@@ -82,6 +82,7 @@ export function SavedDocuments({ documentCount, documents, getDocumentUrl }: Sav
             <div className={styles.paginationActions}>
               <Button
                 title="Previous page"
+                data-testid="documents-previous-page"
                 variant="secondary"
                 disabled={currentPage === 0}
                 onClick={() => setPage(currentPage - 1)}
@@ -90,6 +91,7 @@ export function SavedDocuments({ documentCount, documents, getDocumentUrl }: Sav
               </Button>
               <Button
                 title="Next page"
+                data-testid="documents-next-page"
                 variant="secondary"
                 disabled={currentPage >= pageCount - 1}
                 onClick={() => setPage(currentPage + 1)}
