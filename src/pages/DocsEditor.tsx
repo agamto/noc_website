@@ -8,6 +8,7 @@ import { marked } from 'marked';
 import { prefixRoute } from '../utils/utils.routing';
 import { ROUTES } from '../constants';
 import { AppPageHeader } from '../components/AppPageHeader';
+import { BackToMainLink } from '../components/BackToMainLink';
 
 type Document = { content: string };
 type EditorLocationState = { importedContent?: string; newDocument?: boolean };
@@ -134,13 +135,14 @@ function DocsEditor() {
 
   return (
     <PluginPage layout={PageLayoutType.Canvas}>
+      <AppPageHeader>
+        <BackToMainLink />
+        <Button title="Back to documents" variant="secondary" onClick={() => navigate(prefixRoute(ROUTES.DOCS))}>
+          Back to documents
+        </Button>
+      </AppPageHeader>
       <div className={styles.page}>
         <div className={styles.header}>
-          <AppPageHeader>
-          <Button title="Back to documents" variant="secondary" onClick={() => navigate(prefixRoute(ROUTES.DOCS))}>
-            Back to documents
-          </Button>
-          </AppPageHeader>
           <h1 data-testid="document-title">{name}</h1>
           <div className={styles.headerActions}>
             <div className={styles.directionControls} aria-label="Text direction">

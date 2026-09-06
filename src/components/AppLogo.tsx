@@ -24,8 +24,8 @@ const styles = {
 
     img {
       display: block;
-      width: 48px;
-      height: 48px;
+      width: min(12vw, 64px);
+      height: 64px;
       object-fit: contain;
     }
   `,

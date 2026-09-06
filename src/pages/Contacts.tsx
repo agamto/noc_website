@@ -1,15 +1,14 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { css } from '@emotion/css';
 import { GrafanaTheme2, PageLayoutType } from '@grafana/data';
-import {  LinkButton, useStyles2 } from '@grafana/ui';
+import { useStyles2 } from '@grafana/ui';
 import { PluginPage,getBackendSrv } from '@grafana/runtime';
 import '../style/Contacts.css'
 import { UsersTable } from '../components/appcomponents/UsersTable'
 import {AddUser} from '../components/appcomponents/AddUser'
-import { ROUTES } from '../constants';
-import { prefixRoute } from 'utils/utils.routing';
 import SearchBar from "../components/appcomponents/SearchBar"
 import { AppPageHeader } from '../components/AppPageHeader';
+import { BackToMainLink } from '../components/BackToMainLink';
 function PageFive() {
   const s = useStyles2(getStyles);
   const [users, setUsers] = useState<any[]>([]);
@@ -76,7 +75,7 @@ function PageFive() {
     <PluginPage layout={PageLayoutType.Canvas}>
         <div className={s.container}>
         <AppPageHeader>
-          <LinkButton title="to main page" href={prefixRoute(ROUTES.Main)}>to main page</LinkButton>
+          <BackToMainLink />
         </AppPageHeader>
           <div className={s.content}>contacts</div>
           <div className={s.centered}>
