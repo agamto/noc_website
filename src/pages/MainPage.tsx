@@ -5,6 +5,7 @@ import { LinkButton, useStyles2 } from '@grafana/ui';
 import { prefixRoute } from '../utils/utils.routing';
 import { ROUTES } from '../constants';
 import { PluginPage } from '@grafana/runtime';
+import logo from '../img/logo.png';
 
 function PageOne() {
   const s = useStyles2(getStyles);
@@ -12,7 +13,10 @@ function PageOne() {
   return (
     <PluginPage>
       <div className={s.mainContent}>
-        main page
+        <div className={s.brand}>
+          <img src={logo} alt="NOC public cloud logo" />
+          <div className={s.brandText}>NOC public cloud</div>
+        </div>
         <div className={s.appLinks}>
           <LinkButton title="to contacts" data-testid="main-contacts-link" className={s.appLink} href={prefixRoute(ROUTES.CONTACTS)}>
             to contacts
@@ -41,6 +45,26 @@ const getStyles = (theme: GrafanaTheme2) => ({
     align-items: center;
     justify-content: center;
     text-align: center;
+  `,
+  brand: css`
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: ${theme.spacing(2)};
+    margin-bottom: ${theme.spacing(4)};
+    font-size: 24px;
+    font-weight: 600;
+
+    img {
+      display: block;
+      width: min(24vw, 220px);
+      max-height: 180px;
+      object-fit: contain;
+    }
+  `,
+  brandText: css`
+    font-size: 50px;
+    font-weight: 600;
   `,
   appLinks: css`
     display: flex;
