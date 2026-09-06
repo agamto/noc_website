@@ -19,13 +19,27 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: grafana/plugin-actions/build-plugin@main
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v5
+      - run: npm install && npm run build
+      - uses: magefile/mage-action@v2
+        with:
+          version: latest
+          args: buildAll
+      - run: |
+          zip -r plugin.zip dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: plugin
+          path: plugin.zip
+
+      - name: Upload plugin to GitHub release
         env:
-          GH_TOKEN: ${{ github.token }} # zizmor: ignore[unpinned-uses] provided by grafana
-        # Uncomment to enable plugin signing
-        # (For more info on how to generate the access policy token see https://grafana.com/developers/plugin-tools/publish-a-plugin/sign-a-plugin#generate-an-access-policy-token)
-        #with:
-        # Make sure to save the token in your repository secrets
-        #policy_token: $
-        # Usage of GRAFANA_API_KEY is deprecated, prefer `policy_token` option above
-        #grafana_token: $
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            gh release create "${GITHUB_REF_NAME}" \
+              --title "${GITHUB_REF_NAME}" \
+              --generate-notes
+          fi
+          gh release upload "${GITHUB_REF_NAME}" plugin.zip --clobber
