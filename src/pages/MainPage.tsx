@@ -15,7 +15,7 @@ function PageOne() {
       <div className={s.mainContent}>
         <div className={s.brand} data-testid="main-brand">
           <img data-testid="main-logo" src={logo} alt="NOC public cloud logo" />
-          <div className={s.brandText}>NOC public cloud</div>
+          <div className={s.brandText}>NOC Public Cloud</div>
         </div>
         <div className={s.appLinks}>
           <LinkButton title="to contacts" data-testid="main-contacts-link" className={s.appLink} href={prefixRoute(ROUTES.CONTACTS)}>

@@ -1,11 +1,12 @@
 import React from 'react';
 import { css } from '@emotion/css';
-import { GrafanaTheme2 } from '@grafana/data';
+import { GrafanaTheme2,PageLayoutType } from '@grafana/data';
 import { PluginPage } from '@grafana/runtime';
 import { Button, useStyles2 } from '@grafana/ui';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { prefixRoute } from '../utils/utils.routing';
 import { ROUTES } from '../constants';
+import { AppPageHeader } from '../components/AppPageHeader';
 
 type DashboardLocationState = { dashboardUrl?: string; dashboardTitle?: string };
 
@@ -19,12 +20,14 @@ function DashboardView() {
   const dashboardTitle = dashboardState?.dashboardTitle || 'Dashboard';
 
   return (
-    <PluginPage>
+    <PluginPage layout={PageLayoutType.Canvas}>
       <main className={styles.page}>
         <div className={styles.header}>
+          <AppPageHeader>
           <Button title="Back to dashboards" variant="secondary" onClick={() => navigate(prefixRoute(ROUTES.DASHBOARDS))}>
             Back to dashboards
           </Button>
+          </AppPageHeader>
           <h1>{dashboardTitle}</h1>
         </div>
         <iframe
@@ -45,8 +48,12 @@ export default DashboardView;
 
 const getStyles = (theme: GrafanaTheme2) => ({
   page: css`
+    box-sizing: border-box;
     width: 100%;
+    max-width: none;
+    margin: 0;
     min-height: 80vh;
+    padding: 0;
   `,
   header: css`
     display: flex;

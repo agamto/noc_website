@@ -1,11 +1,12 @@
 import React, { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 import { css } from '@emotion/css';
-import { GrafanaTheme2 } from '@grafana/data';
+import { GrafanaTheme2,PageLayoutType } from '@grafana/data';
 import { getBackendSrv, PluginPage } from '@grafana/runtime';
 import { LinkButton, Button, Combobox, Field, Input, useStyles2 } from '@grafana/ui';
 import { Link, useNavigate } from 'react-router-dom';
 import { prefixRoute } from '../utils/utils.routing';
 import { ROUTES } from '../constants';
+import { AppPageHeader } from '../components/AppPageHeader';
 
 const encodeDocumentPath = (path: string) => path.split('/').map(encodeURIComponent).join('/');
 type ImportedDocument = { name: string; content: string };
@@ -123,11 +124,11 @@ function Docs() {
   });
 
   return (
-    <PluginPage>
+    <PluginPage layout={PageLayoutType.Canvas}>
       <div className={styles.page}>
-        <LinkButton className={styles.backButton} title="to main page" href={prefixRoute(ROUTES.Main)}>
-            to main page
-        </LinkButton>
+        <AppPageHeader>
+          <LinkButton title="to main page" href={prefixRoute(ROUTES.Main)}>to main page</LinkButton>
+        </AppPageHeader>
         <main className={styles.content}>
           <div className={styles.createRow}>
             <h1>Documentation Center</h1>
@@ -235,7 +236,10 @@ const getStyles = (theme: GrafanaTheme2) => ({
     position: relative;
     min-height: 70vh;
     display: flex;
+    flex-direction: column;
+    align-items: center;
     justify-content: center;
+    padding-top: ${theme.spacing(2)};
   `,
   backButton: css`
     position: absolute;
@@ -243,13 +247,15 @@ const getStyles = (theme: GrafanaTheme2) => ({
     left: ${theme.spacing(2)};
   `,
   content: css`
-    width: min(100vw, 1400px);
+    box-sizing: border-box;
+    width: min(100%, 1200px);
+    margin: 0 auto;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     text-align: center;
-    padding: ${theme.spacing(8)} ${theme.spacing(3)} ${theme.spacing(4)};
+    padding: ${theme.spacing(2)} ${theme.spacing(3)} ${theme.spacing(4)};
   `,
   createRow: css`
     display: flex;

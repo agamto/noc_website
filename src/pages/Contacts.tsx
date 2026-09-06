@@ -9,6 +9,7 @@ import {AddUser} from '../components/appcomponents/AddUser'
 import { ROUTES } from '../constants';
 import { prefixRoute } from 'utils/utils.routing';
 import SearchBar from "../components/appcomponents/SearchBar"
+import { AppPageHeader } from '../components/AppPageHeader';
 function PageFive() {
   const s = useStyles2(getStyles);
   const [users, setUsers] = useState<any[]>([]);
@@ -74,9 +75,9 @@ function PageFive() {
   return (
     <PluginPage layout={PageLayoutType.Canvas}>
         <div className={s.container}>
-        <LinkButton className={s.backButton} title="to main page" href={prefixRoute(ROUTES.Main)}>
-            to main page
-          </LinkButton>
+        <AppPageHeader>
+          <LinkButton title="to main page" href={prefixRoute(ROUTES.Main)}>to main page</LinkButton>
+        </AppPageHeader>
           <div className={s.content}>contacts</div>
           <div className={s.centered}>
             <button title={!isVisible ? "add user" : "close"} className={s.addUser} onClick={handleClick}> {!isVisible ? "add user" : "close"} </button>
@@ -101,7 +102,7 @@ const getStyles = (theme: GrafanaTheme2) => ({
     margin-bottom: ${theme.spacing(10)};
   `,
   page: css`
-    padding: ${theme.spacing(3)};
+    padding: ${theme.spacing(10)} ${theme.spacing(3)} ${theme.spacing(3)};
     background-color: ${theme.colors.background.secondary};
     display: flex;
     justify-content: center;

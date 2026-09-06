@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { css } from '@emotion/css';
-import { GrafanaTheme2 } from '@grafana/data';
+import { GrafanaTheme2,PageLayoutType } from '@grafana/data';
 import { getBackendSrv, PluginPage } from '@grafana/runtime';
 import { Button, Combobox, useStyles2 } from '@grafana/ui';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { marked } from 'marked';
 import { prefixRoute } from '../utils/utils.routing';
 import { ROUTES } from '../constants';
+import { AppPageHeader } from '../components/AppPageHeader';
 
 type Document = { content: string };
 type EditorLocationState = { importedContent?: string; newDocument?: boolean };
@@ -132,12 +133,14 @@ function DocsEditor() {
   const preview = marked.parse(content, { renderer: markdownRenderer }) as string;
 
   return (
-    <PluginPage>
+    <PluginPage layout={PageLayoutType.Canvas}>
       <div className={styles.page}>
         <div className={styles.header}>
+          <AppPageHeader>
           <Button title="Back to documents" variant="secondary" onClick={() => navigate(prefixRoute(ROUTES.DOCS))}>
             Back to documents
           </Button>
+          </AppPageHeader>
           <h1 data-testid="document-title">{name}</h1>
           <div className={styles.headerActions}>
             <div className={styles.directionControls} aria-label="Text direction">
@@ -220,6 +223,7 @@ const getStyles = (theme: GrafanaTheme2) => ({
   page: css`
     width: 100%;
     max-width: none;
+    padding-top: ${theme.spacing(10)};
   `,
   header: css`
     display: flex;

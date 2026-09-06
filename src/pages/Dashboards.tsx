@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { css } from '@emotion/css';
-import { GrafanaTheme2 } from '@grafana/data';
+import { GrafanaTheme2,PageLayoutType } from '@grafana/data';
 import { getBackendSrv, PluginPage } from '@grafana/runtime';
 import { LinkButton, Button, Combobox, Input, useStyles2 } from '@grafana/ui';
 import { useNavigate } from 'react-router-dom';
 import { prefixRoute } from '../utils/utils.routing';
 import { ROUTES } from '../constants';
+import { AppPageHeader } from '../components/AppPageHeader';
 
 type Dashboard = {
   id?: number;
@@ -42,13 +43,14 @@ function Dashboards() {
   });
 
   return (
-    <PluginPage>
+    <PluginPage layout={PageLayoutType.Canvas}>
       <main className={styles.page}>
-        <div className={styles.header}>
+        <AppPageHeader>
           <LinkButton title="to main page" href={prefixRoute(ROUTES.Main)}>
             to main page
           </LinkButton>
-        </div>
+        </AppPageHeader>
+        <h1 className={styles.pageTitle}>Dashboards</h1>
         <div className={styles.filters}>
           <Input
             aria-label="Search dashboards"
@@ -95,26 +97,39 @@ export default Dashboards;
 
 const getStyles = (theme: GrafanaTheme2) => ({
   page: css`
+    box-sizing: border-box;
     width: 100%;
-    align-items: center;
+    max-width: none;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0;
   `,
   header: css`
     display: flex;
     flex-direction: column;
     align-items: flex-start;
+    width: 100%;
     gap: ${theme.spacing(1)};
     margin-bottom: ${theme.spacing(3)};
+  `,
+  pageTitle: css`
+    width: 100%;
+    margin: ${theme.spacing(3)} 0;
+    text-align: center;
   `,
   grid: css`
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    width: 100%;
     gap: ${theme.spacing(2)};
   `,
   filters: css`
     display: flex;
     align-items: center;
     gap: ${theme.spacing(2)};
-    width: min(100%, 760px);
+    width: 100%;
     margin-bottom: ${theme.spacing(3)};
 
     input {
