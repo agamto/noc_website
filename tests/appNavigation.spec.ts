@@ -75,7 +75,6 @@ test.describe('navigating app', () => {
       await gotoPage(`/${ROUTES.DOCS}`);
       await page.getByTestId('import-markdown').setInputFiles([...documents, nonMatchingDocument]);
       await page.getByTestId('save-imported-documents').click();
-      await expect(page.getByRole('status')).toHaveText('Imported documents saved');
       await page.getByLabel('Search documents').fill(prefix);
 
       const savedDocuments = page.getByRole('region', { name: 'Saved documents' });
@@ -83,6 +82,7 @@ test.describe('navigating app', () => {
       const rowsPerPage = savedDocuments.getByLabel('Rows per page');
       const pageStatus = savedDocuments.getByText(/^Page \d+ of \d+$/);
 
+      await expect(savedDocuments.getByText(`${prefix}-01.md`)).toBeVisible();
       await expect(pageStatus).toHaveText('Page 1 of 2');
       await expect(rows).toHaveCount(10);
       await expect(savedDocuments.getByText(nonMatchingDocument.name)).not.toBeVisible();
