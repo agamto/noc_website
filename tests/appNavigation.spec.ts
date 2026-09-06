@@ -68,15 +68,17 @@ test.describe('navigating app', () => {
       (_, index) => `${prefix}-${String(index + 1).padStart(2, '0')}.md`
     );
     const nonMatchingDocument = `unrelated-document-${test.info().parallelIndex}.md`;
+    let mockedListRequestCount = 0;
 
     await page.route(
-      (url) => url.pathname === docsResourceUrl && url.searchParams.get('folder') === '',
+      (url) => url.pathname.endsWith(docsResourceUrl),
       async (route) => {
         if (route.request().method() !== 'GET') {
           await route.continue();
           return;
         }
 
+        mockedListRequestCount += 1;
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -86,6 +88,7 @@ test.describe('navigating app', () => {
     );
 
     await gotoPage(`/${ROUTES.DOCS}`);
+  await expect.poll(() => mockedListRequestCount).toBeGreaterThan(0);
     await page.getByLabel('Search documents').fill(prefix);
 
     const savedDocuments = page.getByRole('region', { name: 'Saved documents' });
