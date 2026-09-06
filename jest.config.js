@@ -5,4 +5,8 @@ process.env.TZ = 'UTC';
 module.exports = {
   // Jest configuration provided by Grafana scaffolding
   ...require('./.config/jest.config'),
+  moduleNameMapper: {
+    ...require('./.config/jest.config').moduleNameMapper,
+    '\\.(png|jpe?g|gif)$': '<rootDir>/.config/jest/mocks/fileMock.js',
+  },
 };
