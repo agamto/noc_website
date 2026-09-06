@@ -62,19 +62,24 @@ test.describe('navigating app', () => {
     const prefix = `pagination-e2e-${runId}`;
     const documents = Array.from({ length: 11 }, (_, index) => ({
       name: `${prefix}-${String(index + 1).padStart(2, '0')}.md`,
-      mimeType: 'text/markdown',
-      buffer: Buffer.from(`# Document ${index + 1}`),
+      content: `# Document ${index + 1}`,
     }));
     const nonMatchingDocument = {
       name: `unrelated-document-${runId}.md`,
-      mimeType: 'text/markdown',
-      buffer: Buffer.from('# Other document'),
+      content: '# Other document',
     };
+    let testBodyPassed = false;
 
     try {
+      for (const document of [...documents, nonMatchingDocument]) {
+        const response = await page.request.put(
+          `/api/plugins/main-noc-app/resources/docs/${encodeURIComponent(document.name)}`,
+          { data: document }
+        );
+        expect(response.ok()).toBeTruthy();
+      }
+
       await gotoPage(`/${ROUTES.DOCS}`);
-      await page.getByTestId('import-markdown').setInputFiles([...documents, nonMatchingDocument]);
-      await page.getByTestId('save-imported-documents').click();
       await page.getByLabel('Search documents').fill(prefix);
 
       const savedDocuments = page.getByRole('region', { name: 'Saved documents' });
@@ -106,11 +111,21 @@ test.describe('navigating app', () => {
       await expect(rows).toHaveCount(1);
       await expect(savedDocuments.getByText(`${prefix}-11.md`)).toBeVisible();
       await expect(savedDocuments.getByRole('button', { name: 'Next' })).toBeDisabled();
+      testBodyPassed = true;
     } finally {
-      const cleanupResponses = await Promise.all(
-        [...documents, nonMatchingDocument].map(({ name }) => page.request.delete(`/api/plugins/main-noc-app/resources/docs/${name}`))
+      const cleanupResults = await Promise.allSettled(
+        [...documents, nonMatchingDocument].map(({ name }) =>
+          page.request.delete(`/api/plugins/main-noc-app/resources/docs/${encodeURIComponent(name)}`, { timeout: 5_000 })
+        )
       );
-      cleanupResponses.forEach((response) => expect(response.ok() || response.status() === 404).toBeTruthy());
+      if (testBodyPassed) {
+        cleanupResults.forEach((result) => {
+          if (result.status === 'rejected') {
+            throw result.reason;
+          }
+          expect(result.value.ok() || result.value.status() === 404).toBeTruthy();
+        });
+      }
     }
   });
 
