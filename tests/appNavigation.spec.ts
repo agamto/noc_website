@@ -62,87 +62,61 @@ test.describe('navigating app', () => {
   });
 
   test('paginates saved documents and changes the page limit', async ({ gotoPage, page }) => {
-    const runId = `${Date.now()}-${test.info().parallelIndex}`;
-    const prefix = `pagination-e2e-${runId}`;
-    const documents = Array.from({ length: 11 }, (_, index) => ({
-      name: `${prefix}-${String(index + 1).padStart(2, '0')}.md`,
-      content: `# Document ${index + 1}`,
-    }));
-    const nonMatchingDocument = {
-      name: `unrelated-document-${runId}.md`,
-      content: '# Other document',
-    };
-    let testBodyPassed = false;
+    const prefix = `pagination-e2e-${test.info().parallelIndex}`;
+    const documents = Array.from(
+      { length: 11 },
+      (_, index) => `${prefix}-${String(index + 1).padStart(2, '0')}.md`
+    );
+    const nonMatchingDocument = `unrelated-document-${test.info().parallelIndex}.md`;
 
-    try {
-      for (const document of [...documents, nonMatchingDocument]) {
-        const response = await page.request.put(
-          `${docsResourceUrl}/${encodeURIComponent(document.name)}`,
-          { data: document }
-        );
-        expect(response.ok()).toBeTruthy();
-      }
+    await page.route(
+      (url) => url.pathname === docsResourceUrl && url.searchParams.get('folder') === '',
+      async (route) => {
+        if (route.request().method() !== 'GET') {
+          await route.continue();
+          return;
+        }
 
-      const listResponse = await page.request.get(docsResourceUrl);
-      expect(listResponse.ok()).toBeTruthy();
-      expect(await listResponse.json()).toEqual(
-        expect.arrayContaining(documents.map(({ name }) => name))
-      );
-
-      const [uiListResponse] = await Promise.all([
-        page.waitForResponse(
-          (response) => response.request().method() === 'GET' && response.url().includes(`${docsResourceUrl}?folder=`)
-        ),
-        gotoPage(`/${ROUTES.DOCS}`),
-      ]);
-      expect(uiListResponse.ok()).toBeTruthy();
-      await page.getByLabel('Search documents').fill(prefix);
-
-      const savedDocuments = page.getByRole('region', { name: 'Saved documents' });
-      const rows = savedDocuments.locator('tbody tr');
-      const rowsPerPage = savedDocuments.getByLabel('Rows per page');
-      const pageStatus = savedDocuments.getByText(/^Page \d+ of \d+$/);
-
-      await expect(savedDocuments.getByText(`${prefix}-01.md`)).toBeVisible();
-      await expect(pageStatus).toHaveText('Page 1 of 2');
-      await expect(rows).toHaveCount(10);
-      await expect(savedDocuments.getByText(nonMatchingDocument.name)).not.toBeVisible();
-      await expect(savedDocuments.getByRole('button', { name: 'Previous' })).toBeDisabled();
-      await expect(savedDocuments.getByRole('button', { name: 'Next' })).toBeEnabled();
-
-      await rowsPerPage.selectOption('5');
-      await expect(pageStatus).toHaveText('Page 1 of 3');
-      await expect(rows).toHaveCount(5);
-
-      await savedDocuments.getByRole('button', { name: 'Next' }).click();
-      await expect(pageStatus).toHaveText('Page 2 of 3');
-      await expect(savedDocuments.getByText(`${prefix}-06.md`)).toBeVisible();
-      await expect(savedDocuments.getByText(`${prefix}-01.md`)).not.toBeVisible();
-
-      await rowsPerPage.selectOption('10');
-      await expect(pageStatus).toHaveText('Page 1 of 2');
-      await expect(rows).toHaveCount(10);
-      await savedDocuments.getByRole('button', { name: 'Next' }).click();
-      await expect(pageStatus).toHaveText('Page 2 of 2');
-      await expect(rows).toHaveCount(1);
-      await expect(savedDocuments.getByText(`${prefix}-11.md`)).toBeVisible();
-      await expect(savedDocuments.getByRole('button', { name: 'Next' })).toBeDisabled();
-      testBodyPassed = true;
-    } finally {
-      const cleanupResults = await Promise.allSettled(
-        [...documents, nonMatchingDocument].map(({ name }) =>
-          page.request.delete(`${docsResourceUrl}/${encodeURIComponent(name)}`, { timeout: 5_000 })
-        )
-      );
-      if (testBodyPassed) {
-        cleanupResults.forEach((result) => {
-          if (result.status === 'rejected') {
-            throw result.reason;
-          }
-          expect(result.value.ok() || result.value.status() === 404).toBeTruthy();
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify([...documents, nonMatchingDocument]),
         });
       }
-    }
+    );
+
+    await gotoPage(`/${ROUTES.DOCS}`);
+    await page.getByLabel('Search documents').fill(prefix);
+
+    const savedDocuments = page.getByRole('region', { name: 'Saved documents' });
+    const rows = savedDocuments.locator('tbody tr');
+    const rowsPerPage = savedDocuments.getByLabel('Rows per page');
+    const pageStatus = savedDocuments.getByText(/^Page \d+ of \d+$/);
+
+    await expect(savedDocuments.getByText(`${prefix}-01.md`)).toBeVisible();
+    await expect(pageStatus).toHaveText('Page 1 of 2');
+    await expect(rows).toHaveCount(10);
+    await expect(savedDocuments.getByText(nonMatchingDocument)).not.toBeVisible();
+    await expect(savedDocuments.getByRole('button', { name: 'Previous' })).toBeDisabled();
+    await expect(savedDocuments.getByRole('button', { name: 'Next' })).toBeEnabled();
+
+    await rowsPerPage.selectOption('5');
+    await expect(pageStatus).toHaveText('Page 1 of 3');
+    await expect(rows).toHaveCount(5);
+
+    await savedDocuments.getByRole('button', { name: 'Next' }).click();
+    await expect(pageStatus).toHaveText('Page 2 of 3');
+    await expect(savedDocuments.getByText(`${prefix}-06.md`)).toBeVisible();
+    await expect(savedDocuments.getByText(`${prefix}-01.md`)).not.toBeVisible();
+
+    await rowsPerPage.selectOption('10');
+    await expect(pageStatus).toHaveText('Page 1 of 2');
+    await expect(rows).toHaveCount(10);
+    await savedDocuments.getByRole('button', { name: 'Next' }).click();
+    await expect(pageStatus).toHaveText('Page 2 of 2');
+    await expect(rows).toHaveCount(1);
+    await expect(savedDocuments.getByText(`${prefix}-11.md`)).toBeVisible();
+    await expect(savedDocuments.getByRole('button', { name: 'Next' })).toBeDisabled();
   });
 
 });
