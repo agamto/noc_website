@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { css } from '@emotion/css';
 import { GrafanaTheme2 } from '@grafana/data';
 import { Button, useStyles2 } from '@grafana/ui';
@@ -14,6 +14,11 @@ export function SavedDocuments({ documentCount, documents, getDocumentUrl }: Sav
   const styles = useStyles2(getStyles);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
+
+  useEffect(() => {
+    setPage(0);
+  }, [documents]);
+
   const emptyMessage = documentCount === 0 ? 'No documents in this folder.' : 'No documents match your search.';
   const pageCount = Math.max(1, Math.ceil(documents.length / pageSize));
   const currentPage = Math.min(page, pageCount - 1);

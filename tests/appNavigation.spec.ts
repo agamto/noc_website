@@ -1,5 +1,9 @@
+import { Buffer } from 'node:buffer';
 import { test, expect } from './fixtures';
 import { ROUTES } from '../src/constants';
+import pluginJson from '../src/plugin.json';
+
+const docsResourceUrl = `/api/plugins/${pluginJson.id}/resources/docs`;
 
 test.describe('navigating app', () => {
   test('main page', async ({ gotoPage, page }) => {
@@ -73,13 +77,25 @@ test.describe('navigating app', () => {
     try {
       for (const document of [...documents, nonMatchingDocument]) {
         const response = await page.request.put(
-          `/api/plugins/main-noc-app/resources/docs/${encodeURIComponent(document.name)}`,
+          `${docsResourceUrl}/${encodeURIComponent(document.name)}`,
           { data: document }
         );
         expect(response.ok()).toBeTruthy();
       }
 
-      await gotoPage(`/${ROUTES.DOCS}`);
+      const listResponse = await page.request.get(docsResourceUrl);
+      expect(listResponse.ok()).toBeTruthy();
+      expect(await listResponse.json()).toEqual(
+        expect.arrayContaining(documents.map(({ name }) => name))
+      );
+
+      const [uiListResponse] = await Promise.all([
+        page.waitForResponse(
+          (response) => response.request().method() === 'GET' && response.url().includes(`${docsResourceUrl}?folder=`)
+        ),
+        gotoPage(`/${ROUTES.DOCS}`),
+      ]);
+      expect(uiListResponse.ok()).toBeTruthy();
       await page.getByLabel('Search documents').fill(prefix);
 
       const savedDocuments = page.getByRole('region', { name: 'Saved documents' });
@@ -115,7 +131,7 @@ test.describe('navigating app', () => {
     } finally {
       const cleanupResults = await Promise.allSettled(
         [...documents, nonMatchingDocument].map(({ name }) =>
-          page.request.delete(`/api/plugins/main-noc-app/resources/docs/${encodeURIComponent(name)}`, { timeout: 5_000 })
+          page.request.delete(`${docsResourceUrl}/${encodeURIComponent(name)}`, { timeout: 5_000 })
         )
       );
       if (testBodyPassed) {

@@ -1,4 +1,4 @@
-import React, { ChangeEvent, FormEvent, useEffect, useState } from 'react';
+import React, { ChangeEvent, FormEvent, useEffect, useMemo, useState } from 'react';
 import { css } from '@emotion/css';
 import { GrafanaTheme2,PageLayoutType } from '@grafana/data';
 import { getBackendSrv, PluginPage } from '@grafana/runtime';
@@ -136,11 +136,13 @@ function Docs() {
     });
   };
 
-  const searchWords = searchTerm.toLowerCase().trim().split(/\s+/).filter(Boolean);
-  const visibleDocuments = documents.filter((name) => {
-    const normalizedName = name.toLowerCase();
-    return searchWords.every((word) => normalizedName.includes(word));
-  });
+  const visibleDocuments = useMemo(() => {
+    const searchWords = searchTerm.toLowerCase().trim().split(/\s+/).filter(Boolean);
+    return documents.filter((name) => {
+      const normalizedName = name.toLowerCase();
+      return searchWords.every((word) => normalizedName.includes(word));
+    });
+  }, [documents, searchTerm]);
 
   return (
     <PluginPage layout={PageLayoutType.Canvas}>
