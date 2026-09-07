@@ -26,13 +26,13 @@ describe('Components/App', () => {
   });
 
   test('renders without an error"', async () => {
-    const { queryByText } = render(
+    const { queryByTestId } = render(
       <MemoryRouter>
         <App {...props} />
       </MemoryRouter>
     );
 
     // Application is lazy loaded, so we need to wait for the component and routes to be rendered
-    await waitFor(() => expect(queryByText(/main page/i)).toBeInTheDocument(), { timeout: 2000 });
+    await waitFor(() => expect(queryByTestId('main-brand')).toBeInTheDocument(), { timeout: 2000 });
   });
 });

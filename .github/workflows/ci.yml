@@ -136,7 +136,7 @@ jobs:
       - name: Set Grafana OSS E2E versions
         id: add-oss-versions
         run: |
-          echo 'matrix=[{"NAME":"grafana-oss","VERSION":"11.5.8"},{"NAME":"grafana-oss","VERSION":"12.4.0"},{"NAME":"grafana-oss","VERSION":"12.4.3"},{"NAME":"grafana-oss","VERSION":"13.0.1"},{"NAME":"grafana-oss","VERSION":"13.0.2"}]' >> "$GITHUB_OUTPUT"
+          echo 'matrix=[{"NAME":"grafana-oss","VERSION":"11.5.8"},{"NAME":"grafana-oss","VERSION":"12.4.0"},{"NAME":"grafana-oss","VERSION":"12.4.3"},{"NAME":"grafana-oss","VERSION":"13.0.1"},{"NAME":"grafana-oss","VERSION":"13.0.2"},{"NAME":"grafana-oss","VERSION":"latest"}]' >> "$GITHUB_OUTPUT"
 
   playwright-tests:
     needs: [resolve-versions, build]

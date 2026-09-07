@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/grafana/grafana/main/docs/sources/developers/plugins/plugin.schema.json",
   "type": "app",
-  "name": "Noc_app",
+  "name": "NOC Public Cloud",
   "id": "main-noc-app",
   "backend": true,
   "executable": "gpx_noc_app",
@@ -12,8 +12,8 @@
       "name": "Main"
     },
     "logos": {
-      "small": "img/logo.svg",
-      "large": "img/logo.svg"
+      "small": "img/logo.png",
+      "large": "img/logo.png"
     },
     "screenshots": [],
     "version": "%VERSION%",
@@ -38,7 +38,7 @@
     },
     {
       "type": "page",
-      "name": "docs",
+      "name": "Documentations",
       "path": "/a/%PLUGIN_ID%/docs",
       "role": "Admin",
       "addToNav": true,

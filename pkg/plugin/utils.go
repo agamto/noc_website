@@ -1,10 +1,13 @@
 package plugin
 
 import (
-	"regexp"
-	"database/sql"
 	"encoding/json"
 	"fmt"
+	"database/sql"
+	"net"
+	"net/url"
+	"regexp"
+	"strconv"
 	_ "github.com/lib/pq"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 )
@@ -47,11 +50,18 @@ func looksLikeSQLInjection(s string) bool {
 func ConnectToDB(settings backend.AppInstanceSettings) (*sql.DB, error) {
 	// 1. Extract non-secret values from jsonData
 	host, user, dbname, port, password, err := ExtractSettings(settings)
-	// 3. Build Postgres DSN
-	dsn := fmt.Sprintf(
-		"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		host, port, user, password, dbname,
-	)
+	if err != nil {
+		return nil, err
+	}
+
+	// A URL safely encodes credentials that contain spaces, quotes, or equals signs.
+	dsn := (&url.URL{
+		Scheme:   "postgres",
+		User:     url.UserPassword(user, password),
+		Host:     net.JoinHostPort(host, strconv.Itoa(port)),
+		Path:     dbname,
+		RawQuery: "sslmode=disable",
+	}).String()
 	// 4. Open DB connection
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
