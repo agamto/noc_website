@@ -35,6 +35,7 @@ export function DocumentForms({
         <form id="new-document-form" onSubmit={onCreateDocument} className={`${styles.contextPanel} ${styles.nameForm}`}>
           <Field label="New document">
             <Input
+              data-testid="new-document-name"
               aria-label="New document"
               value={newName}
               placeholder="architecture.md"

@@ -28,7 +28,9 @@ test.describe('navigating app', () => {
     const addDocumentButton = page.getByTestId('add-new-document');
     await addDocumentButton.click();
     await expect(addDocumentButton).toHaveAttribute('aria-expanded', 'true');
-    await page.getByRole('textbox', { name: 'New document' }).fill('runbook.md');
+    const newDocumentForm = page.locator('#new-document-form');
+    await expect(newDocumentForm).toBeVisible();
+    await newDocumentForm.getByTestId('new-document-name').fill('runbook.md');
     await page.locator('[data-testid="create-document"]').click({ force: true });
     await expect(page.getByText('runbook.md')).toBeVisible();
     const markdownContent = page.locator('textarea[aria-label="Markdown content"]');
