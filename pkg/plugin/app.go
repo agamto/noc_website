@@ -2,6 +2,8 @@ package plugin
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -24,22 +26,45 @@ var (
 // App is an example app plugin with a backend which can respond to data queries.
 type App struct {
 	backend.CallResourceHandler
-	settings backend.AppInstanceSettings
-	docsDir  string
+	settings      backend.AppInstanceSettings
+	documentStore DocumentStore
 }
 
 // NewApp creates a new example *App instance.
-func NewApp(_ context.Context, settings backend.AppInstanceSettings) (instancemgmt.Instance, error) {
-	dataPath := os.Getenv("GF_PATHS_DATA")
-	if dataPath == "" {
-		dataPath = os.TempDir()
+func NewApp(ctx context.Context, settings backend.AppInstanceSettings) (instancemgmt.Instance, error) {
+	var storageSettings struct {
+		DocumentStorage  string `json:"documentStorage"`
+		DocumentS3Bucket string `json:"documentS3Bucket"`
+		DocumentS3Prefix string `json:"documentS3Prefix"`
+		DocumentS3Region string `json:"documentS3Region"`
 	}
-	docsDir := filepath.Join(dataPath, "plugins", "main-noc-app", "docs")
-	if err := os.MkdirAll(docsDir, 0o750); err != nil {
-		return nil, err
+	if err := json.Unmarshal(settings.JSONData, &storageSettings); err != nil {
+		return nil, fmt.Errorf("parse plugin settings: %w", err)
 	}
 
-	app := App{docsDir: docsDir}
+	var documentStore DocumentStore
+	switch storageSettings.DocumentStorage {
+	case "", "local":
+		dataPath := os.Getenv("GF_PATHS_DATA")
+		if dataPath == "" {
+			dataPath = os.TempDir()
+		}
+		docsDir := filepath.Join(dataPath, "plugins", "main-noc-app", "docs")
+		if err := os.MkdirAll(docsDir, 0o750); err != nil {
+			return nil, err
+		}
+		documentStore = localDocumentStore{root: docsDir}
+	case "s3":
+		store, err := newS3DocumentStore(ctx, storageSettings.DocumentS3Bucket, storageSettings.DocumentS3Prefix, storageSettings.DocumentS3Region)
+		if err != nil {
+			return nil, err
+		}
+		documentStore = store
+	default:
+		return nil, fmt.Errorf("unsupported document storage: %s", storageSettings.DocumentStorage)
+	}
+
+	app := App{documentStore: documentStore}
 	app.settings = settings
 	// Use a httpadapter (provided by the SDK) for resource calls. This allows us
 	// to use a *http.ServeMux for resource calls, so we can map multiple routes
