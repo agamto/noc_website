@@ -15,6 +15,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/smithy-go"
 )
@@ -137,6 +138,9 @@ func newS3DocumentStore(ctx context.Context, bucket, prefix, region string) (*s3
 	if region != "" {
 		options = append(options, awsconfig.WithRegion(region))
 	}
+	options = append(options, awsconfig.WithCredentialsProvider(
+		aws.NewCredentialsCache(credentials.NewContainerCredentialsProvider()),
+	))
 	config, err := awsconfig.LoadDefaultConfig(ctx, options...)
 	if err != nil {
 		return nil, fmt.Errorf("load AWS configuration: %w", err)
