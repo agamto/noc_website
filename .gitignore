@@ -32,6 +32,8 @@ dist/
 artifacts/
 work/
 ci/
+/plugin.zip
+/config-build.exit
 
 # e2e test directories
 /test-results/

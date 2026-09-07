@@ -56,6 +56,14 @@ export function DashboardPanels({
               >
                 ×
               </Button>
+              <Button
+                title={`Open ${dashboard.title}`}
+                variant="secondary"
+                className={styles.openDashboardButton}
+                onClick={() => window.location.assign(dashboard.url)}
+              >
+                Open dashboard
+              </Button>
               <iframe
                 className={styles.dashboard}
                 title={`Grafana dashboard ${index + 1}`}
@@ -104,6 +112,12 @@ const getStyles = (theme: GrafanaTheme2) => ({
     position: absolute;
     top: ${theme.spacing(1)};
     right: ${theme.spacing(1)};
+    z-index: 1;
+  `,
+  openDashboardButton: css`
+    position: absolute;
+    top: ${theme.spacing(1)};
+    left: ${theme.spacing(1)};
     z-index: 1;
   `,
   emptyPane: css`
