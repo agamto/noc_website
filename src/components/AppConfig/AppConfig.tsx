@@ -3,7 +3,7 @@ import { lastValueFrom } from 'rxjs';
 import { css } from '@emotion/css';
 import { AppPluginMeta, GrafanaTheme2, PluginConfigPageProps, PluginMeta } from '@grafana/data';
 import { getBackendSrv } from '@grafana/runtime';
-import { Button, Field, FieldSet, Input, SecretInput, useStyles2 } from '@grafana/ui';
+import { Button, Field, FieldSet, Input, RadioButtonGroup, SecretInput, useStyles2 } from '@grafana/ui';
 import {testIds} from '../testIds'
 type AppPluginSettings = {
   apiUrl?: string;
@@ -13,6 +13,10 @@ type AppPluginSettings = {
   password?: string;
   isPasswordSet?: boolean;
   dbname?: string;
+  documentStorage?: 'local' | 's3';
+  documentS3Bucket?: string;
+  documentS3Prefix?: string;
+  documentS3Region?: string;
 };
 type DBState = {
   host: string;
@@ -22,6 +26,12 @@ type DBState = {
   isPasswordSet: boolean;
   dbname: string;
 }
+type DocumentStorageState = {
+  documentStorage: 'local' | 's3';
+  documentS3Bucket: string;
+  documentS3Prefix: string;
+  documentS3Region: string;
+};
 export interface AppConfigProps extends PluginConfigPageProps<AppPluginMeta<AppPluginSettings>> {}
 
 const AppConfig = ({ plugin }: AppConfigProps) => {
@@ -36,6 +46,13 @@ const AppConfig = ({ plugin }: AppConfigProps) => {
     dbname: jsonData?.dbname || '',
   });
   const isDBSubmitDisabled = Boolean(!DBstate.host || !DBstate.user || (!DBstate.password && !DBstate.isPasswordSet) || !DBstate.port);
+  const [storageState, setStorageState] = useState<DocumentStorageState>({
+    documentStorage: jsonData?.documentStorage === 's3' ? 's3' : 'local',
+    documentS3Bucket: jsonData?.documentS3Bucket || '',
+    documentS3Prefix: jsonData?.documentS3Prefix || '',
+    documentS3Region: jsonData?.documentS3Region || '',
+  });
+  const isStorageSubmitDisabled = storageState.documentStorage === 's3' && !storageState.documentS3Bucket;
 
   const onResetDBPassword= () =>
     setDBState({
@@ -47,7 +64,8 @@ const AppConfig = ({ plugin }: AppConfigProps) => {
   setDBState({...DBstate, [event.target.name]: event.target.value.trim()});
   };
 
-  const onSubmit = () => {
+  const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     if (isDBSubmitDisabled) {
       return;
     }
@@ -61,14 +79,36 @@ const AppConfig = ({ plugin }: AppConfigProps) => {
         port: DBstate.port,
         user: DBstate.user,
         dbname: DBstate.dbname,
+        documentStorage: jsonData?.documentStorage,
+        documentS3Bucket: jsonData?.documentS3Bucket,
+        documentS3Prefix: jsonData?.documentS3Prefix,
+        documentS3Region: jsonData?.documentS3Region,
       },
       // This cannot be queried later by the frontend.
       // We don't want to override it in case it was set previously and left untouched now.
       secureJsonData: Object.keys(secureJsonData).length ? secureJsonData : undefined,
     });
   };
+  const onStorageSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (isStorageSubmitDisabled) {
+      return;
+    }
+    updatePluginAndReload(plugin.meta.id, {
+      enabled,
+      pinned,
+      jsonData: {
+        ...jsonData,
+        documentStorage: storageState.documentStorage,
+        documentS3Bucket: storageState.documentS3Bucket,
+        documentS3Prefix: storageState.documentS3Prefix,
+        documentS3Region: storageState.documentS3Region,
+      },
+    });
+  };
 
   return (
+    <>
     <form onSubmit={onSubmit}>
       <FieldSet label="DB Settings">
         <Field label="host" description="" className={s.marginTop}>
@@ -135,6 +175,48 @@ const AppConfig = ({ plugin }: AppConfigProps) => {
         </div>
       </FieldSet>
     </form>
+      <form onSubmit={onStorageSubmit}>
+      <FieldSet label="Document storage" className={s.marginTop}>
+        <Field label="Storage type">
+          <RadioButtonGroup
+            options={[{ label: 'Local filesystem', value: 'local' }, { label: 'Amazon S3', value: 's3' }]}
+            value={storageState.documentStorage}
+            onChange={(documentStorage) => setStorageState({ ...storageState, documentStorage: documentStorage as 'local' | 's3' })}
+          />
+        </Field>
+        {storageState.documentStorage === 's3' && (
+          <>
+            <Field label="S3 bucket" description="Uses the ECS task role; do not enter AWS access keys." className={s.marginTop}>
+              <Input
+                value={storageState.documentS3Bucket}
+                placeholder="noc-public-cloud-documents"
+                onChange={(event) => setStorageState({ ...storageState, documentS3Bucket: event.currentTarget.value.trim() })}
+              />
+            </Field>
+            <Field label="S3 prefix" description="Optional folder prefix inside the bucket." className={s.marginTop}>
+              <Input
+                value={storageState.documentS3Prefix}
+                placeholder="production/grafana-documents"
+                onChange={(event) => setStorageState({ ...storageState, documentS3Prefix: event.currentTarget.value.trim() })}
+              />
+            </Field>
+            <Field label="AWS region" description="Optional; defaults to the ECS AWS_REGION environment variable." className={s.marginTop}>
+              <Input
+                value={storageState.documentS3Region}
+                placeholder="il-central-1"
+                onChange={(event) => setStorageState({ ...storageState, documentS3Region: event.currentTarget.value.trim() })}
+              />
+            </Field>
+          </>
+        )}
+        <div className={s.marginTop}>
+          <Button title="Save document storage" type="submit" disabled={isStorageSubmitDisabled}>
+            Save document storage
+          </Button>
+        </div>
+      </FieldSet>
+      </form>
+    </>
   );
 };
 
