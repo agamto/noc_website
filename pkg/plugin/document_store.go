@@ -15,7 +15,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/credentials/endpointcreds"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/smithy-go"
 )
@@ -138,8 +138,12 @@ func newS3DocumentStore(ctx context.Context, bucket, prefix, region string) (*s3
 	if region != "" {
 		options = append(options, awsconfig.WithRegion(region))
 	}
+	credentialsPath := os.Getenv("AWS_CONTAINER_CREDENTIALS_RELATIVE_URI")
+	if credentialsPath == "" {
+		return nil, fmt.Errorf("AWS_CONTAINER_CREDENTIALS_RELATIVE_URI is not set")
+	}
 	options = append(options, awsconfig.WithCredentialsProvider(
-		aws.NewCredentialsCache(credentials.NewContainerCredentialsProvider()),
+		aws.NewCredentialsCache(endpointcreds.New("http://169.254.170.2"+credentialsPath)),
 	))
 	config, err := awsconfig.LoadDefaultConfig(ctx, options...)
 	if err != nil {
@@ -264,7 +268,9 @@ func (store *s3DocumentStore) Move(ctx context.Context, name, folder string) err
 	return store.Delete(ctx, name)
 }
 
-func safeS3Prefix(prefix string) (string, error) { return safeS3RelativePath(strings.Trim(prefix, "/"), false) }
+func safeS3Prefix(prefix string) (string, error) {
+	return safeS3RelativePath(strings.Trim(prefix, "/"), false)
+}
 
 func safeS3RelativePath(value string, document bool) (string, error) {
 	if value == "" && !document {
@@ -278,7 +284,9 @@ func safeS3RelativePath(value string, document bool) (string, error) {
 
 func sortedKeys(values map[string]struct{}) []string {
 	keys := make([]string, 0, len(values))
-	for value := range values { keys = append(keys, value) }
+	for value := range values {
+		keys = append(keys, value)
+	}
 	sort.Strings(keys)
 	return keys
 }
