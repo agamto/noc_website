@@ -1,5 +1,9 @@
 #!/bin/bash
-service start docker
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+nvm use
+
+service docker start
 
 PWD_DIR=$(pwd)
 
@@ -11,11 +15,11 @@ tmux send-keys -t dev_session "cd $PWD_DIR && sudo service postgresql start" C-m
 
 # New window for Mage build
 tmux new-window -t dev_session -n mage_build
-tmux send-keys -t dev_session:mage_build "cd $PWD_DIR && mage -v build:linux" C-m
+tmux send-keys -t dev_session:mage_build "bash -lc 'cd $PWD_DIR && mage -v build:linux'" C-m
 
 # Split horizontally for npm
 tmux split-window -h -t dev_session
-tmux send-keys -t dev_session "cd $PWD_DIR && npm run dev" C-m
+tmux send-keys -t dev_session "bash -lc '$PWD_DIR/run-dev.sh'" C-m
 
 # Split vertically for docker
 tmux split-window -v -t dev_session
@@ -26,4 +30,3 @@ tmux select-pane -t 0
 
 # Attach session
 tmux attach -t dev_session
-
