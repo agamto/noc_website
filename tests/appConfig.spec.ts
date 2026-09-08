@@ -23,12 +23,20 @@ test('should be possible to save app configuration', async ({ appConfigPage, pag
 });
 
 // Leaving the plugin on S3 routes every later docs test at a bucket that does not exist.
+// Each settings write restarts the plugin backend, so only write when there is S3 state to undo.
 test.afterEach(async ({ page }) => {
-  const settings = await (await page.request.get(`/api/plugins/${pluginJson.id}/settings`)).json();
+  const response = await page.request.get(`/api/plugins/${pluginJson.id}/settings`);
+  if (!response.ok()) {
+    return;
+  }
+  const settings = await response.json();
+  if (settings.jsonData?.documentStorage !== 's3') {
+    return;
+  }
   await page.request.post(`/api/plugins/${pluginJson.id}/settings`, {
     data: {
-      enabled: settings.enabled,
-      pinned: settings.pinned,
+      enabled: true,
+      pinned: settings.pinned ?? false,
       jsonData: { ...settings.jsonData, documentStorage: 'local' },
     },
   });
