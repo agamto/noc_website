@@ -14,7 +14,11 @@ node_modules/
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
-
+repro.sh
+repro2.sh
+check.sh
+check2.sh
+check3.sh
 # Runtime data
 pids
 *.pid

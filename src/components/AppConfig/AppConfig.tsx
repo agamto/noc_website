@@ -184,6 +184,7 @@ const AppConfig = ({ plugin }: AppConfigProps) => {
                   type="radio"
                   name="documentStorage"
                   value="local"
+                  aria-label="Local filesystem"
                   checked={storageState.documentStorage === 'local'}
                   onChange={() => setStorageState((previous) => ({ ...previous, documentStorage: 'local' }))}
                 />
@@ -194,6 +195,7 @@ const AppConfig = ({ plugin }: AppConfigProps) => {
                   type="radio"
                   name="documentStorage"
                   value="s3"
+                  aria-label="Amazon S3"
                   checked={storageState.documentStorage === 's3'}
                   onChange={() => setStorageState((previous) => ({ ...previous, documentStorage: 's3' }))}
                 />
