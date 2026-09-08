@@ -15,7 +15,6 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials/endpointcreds"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/smithy-go"
 )
@@ -138,13 +137,6 @@ func newS3DocumentStore(ctx context.Context, bucket, prefix, region string) (*s3
 	if region != "" {
 		options = append(options, awsconfig.WithRegion(region))
 	}
-	credentialsPath := os.Getenv("AWS_CONTAINER_CREDENTIALS_RELATIVE_URI")
-	if credentialsPath == "" {
-		return nil, fmt.Errorf("AWS_CONTAINER_CREDENTIALS_RELATIVE_URI is not set")
-	}
-	options = append(options, awsconfig.WithCredentialsProvider(
-		aws.NewCredentialsCache(endpointcreds.New("http://169.254.170.2"+credentialsPath)),
-	))
 	config, err := awsconfig.LoadDefaultConfig(ctx, options...)
 	if err != nil {
 		return nil, fmt.Errorf("load AWS configuration: %w", err)
