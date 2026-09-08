@@ -22,3 +22,5 @@ Use this workflow to add or repair reliable end-to-end coverage.
 - Do not rely on pre-existing dashboard or document inventory.
 - Wait for semantic UI state or the relevant API response.
 - Preserve the original test failure when cleanup also fails.
+- Restore any plugin setting a test writes. The suite shares one Grafana across 8 workers, so leaving `documentStorage` on `s3` routes every later docs test at a non-existent bucket.
+- Match locators on stable hooks, not display copy. `getByPlaceholder` matches substrings, so overlapping placeholders raise strict-mode violations.
