@@ -3,7 +3,7 @@ import { lastValueFrom } from 'rxjs';
 import { css } from '@emotion/css';
 import { AppPluginMeta, GrafanaTheme2, PluginConfigPageProps, PluginMeta } from '@grafana/data';
 import { getBackendSrv } from '@grafana/runtime';
-import { Button, Field, FieldSet, Input, RadioButtonGroup, SecretInput, useStyles2 } from '@grafana/ui';
+import { Button, Field, FieldSet, Input, SecretInput, useStyles2 } from '@grafana/ui';
 import {testIds} from '../testIds'
 type AppPluginSettings = {
   apiUrl?: string;
@@ -177,40 +177,75 @@ const AppConfig = ({ plugin }: AppConfigProps) => {
     </form>
       <form onSubmit={onStorageSubmit}>
       <FieldSet label="Document storage" className={s.marginTop}>
-        <Field label="Storage type">
-          <RadioButtonGroup
-            options={[{ label: 'Local filesystem', value: 'local' }, { label: 'Amazon S3', value: 's3' }]}
-            value={storageState.documentStorage}
-            onChange={(documentStorage) => setStorageState({ ...storageState, documentStorage: documentStorage as 'local' | 's3' })}
-          />
+          <Field label="Storage type">
+            <div data-testid="document-storage-type">
+              <label>
+                <input
+                  type="radio"
+                  name="documentStorage"
+                  value="local"
+                  checked={storageState.documentStorage === 'local'}
+                  onChange={() => setStorageState((previous) => ({ ...previous, documentStorage: 'local' }))}
+                />
+                Local filesystem
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  name="documentStorage"
+                  value="s3"
+                  checked={storageState.documentStorage === 's3'}
+                  onChange={() => setStorageState((previous) => ({ ...previous, documentStorage: 's3' }))}
+                />
+                Amazon S3
+              </label>
+            </div>
         </Field>
         {storageState.documentStorage === 's3' && (
           <>
             <Field label="S3 bucket" description="Uses the ECS task role; do not enter AWS access keys." className={s.marginTop}>
               <Input
                 value={storageState.documentS3Bucket}
+                data-testid="document-s3-bucket"
+                id="document-s3-bucket"
+                name="documentS3Bucket"
                 placeholder="noc-public-cloud-documents"
-                onChange={(event) => setStorageState({ ...storageState, documentS3Bucket: event.currentTarget.value.trim() })}
+                onChange={(event) => {
+                  const documentS3Bucket = event.currentTarget.value.trim();
+                  setStorageState((previous) => ({ ...previous, documentS3Bucket }));
+                }}
               />
             </Field>
             <Field label="S3 prefix" description="Optional folder prefix inside the bucket." className={s.marginTop}>
               <Input
                 value={storageState.documentS3Prefix}
+                data-testid="document-s3-prefix"
+                id="document-s3-prefix"
+                name="documentS3Prefix"
                 placeholder="production/grafana-documents"
-                onChange={(event) => setStorageState({ ...storageState, documentS3Prefix: event.currentTarget.value.trim() })}
+                onChange={(event) => {
+                  const documentS3Prefix = event.currentTarget.value.trim();
+                  setStorageState((previous) => ({ ...previous, documentS3Prefix }));
+                }}
               />
             </Field>
             <Field label="AWS region" description="Optional; defaults to the ECS AWS_REGION environment variable." className={s.marginTop}>
               <Input
                 value={storageState.documentS3Region}
+                data-testid="document-s3-region"
+                id="document-s3-region"
+                name="documentS3Region"
                 placeholder="il-central-1"
-                onChange={(event) => setStorageState({ ...storageState, documentS3Region: event.currentTarget.value.trim() })}
+                onChange={(event) => {
+                  const documentS3Region = event.currentTarget.value.trim();
+                  setStorageState((previous) => ({ ...previous, documentS3Region }));
+                }}
               />
             </Field>
           </>
         )}
         <div className={s.marginTop}>
-          <Button title="Save document storage" type="submit" disabled={isStorageSubmitDisabled}>
+          <Button title="Save document storage" type="submit" data-testid="save-document-storage" disabled={isStorageSubmitDisabled}>
             Save document storage
           </Button>
         </div>

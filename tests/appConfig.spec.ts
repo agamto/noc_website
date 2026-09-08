@@ -1,4 +1,7 @@
 import { test, expect } from './fixtures';
+import pluginJson from '../src/plugin.json';
+
+test.describe.configure({ mode: 'serial' });
 
 test('should be possible to save app configuration', async ({ appConfigPage, page }) => {
   const saveButton = page.locator('[data-testid="save-db-settings"]');
@@ -16,5 +19,44 @@ test('should be possible to save app configuration', async ({ appConfigPage, pag
   const saveResponse = appConfigPage.waitForSettingsResponse();
 
   await saveButton.click({ force: true });
+  await expect(saveResponse).toBeOK();
+});
+
+// Leaving the plugin on S3 routes every later docs test at a bucket that does not exist.
+test.afterEach(async ({ page }) => {
+  const settings = await (await page.request.get(`/api/plugins/${pluginJson.id}/settings`)).json();
+  await page.request.post(`/api/plugins/${pluginJson.id}/settings`, {
+    data: {
+      enabled: settings.enabled,
+      pinned: settings.pinned,
+      jsonData: { ...settings.jsonData, documentStorage: 'local' },
+    },
+  });
+});
+
+test('should save S3 document storage settings', async ({ appConfigPage, page }) => {
+  const s3Radio = page.getByRole('radio', { name: 'Amazon S3' });
+  await s3Radio.click();
+  await expect(s3Radio).toBeChecked();
+  const s3Bucket = page.getByPlaceholder('noc-public-cloud-documents');
+  await expect(s3Bucket).toBeVisible();
+  await expect(s3Bucket).toBeEnabled();
+  await s3Bucket.fill('noc-public-cloud-documents');
+  await page.getByPlaceholder('production/grafana-documents').fill('production/grafana-documents');
+  await page.getByPlaceholder('il-central-1').fill('il-central-1');
+  await expect(page.getByTestId('save-document-storage')).toBeEnabled();
+
+  const saveRequest = page.waitForRequest((request) => request.method() === 'POST' && request.url().endsWith(`/api/plugins/${pluginJson.id}/settings`));
+  const saveResponse = appConfigPage.waitForSettingsResponse();
+  await page.getByTestId('save-document-storage').click();
+  const payload = await saveRequest;
+  expect(payload.postDataJSON()).toMatchObject({
+    jsonData: {
+      documentStorage: 's3',
+      documentS3Bucket: 'noc-public-cloud-documents',
+      documentS3Prefix: 'production/grafana-documents',
+      documentS3Region: 'il-central-1',
+    },
+  });
   await expect(saveResponse).toBeOK();
 });
