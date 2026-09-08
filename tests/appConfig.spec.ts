@@ -46,12 +46,12 @@ test('should save S3 document storage settings', async ({ appConfigPage, page })
   const s3Radio = page.getByRole('radio', { name: 'Amazon S3' });
   await s3Radio.click();
   await expect(s3Radio).toBeChecked();
-  const s3Bucket = page.getByPlaceholder('noc-public-cloud-documents');
+  const s3Bucket = page.getByTestId('document-s3-bucket');
   await expect(s3Bucket).toBeVisible();
   await expect(s3Bucket).toBeEnabled();
   await s3Bucket.fill('noc-public-cloud-documents');
-  await page.getByPlaceholder('production/grafana-documents').fill('production/grafana-documents');
-  await page.getByPlaceholder('il-central-1').fill('il-central-1');
+  await page.getByTestId('document-s3-prefix').fill('production/grafana-documents');
+  await page.getByTestId('document-s3-region').fill('il-central-1');
   await expect(page.getByTestId('save-document-storage')).toBeEnabled();
 
   const saveRequest = page.waitForRequest((request) => request.method() === 'POST' && request.url().endsWith(`/api/plugins/${pluginJson.id}/settings`));
