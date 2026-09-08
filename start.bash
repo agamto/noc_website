@@ -1,7 +1,9 @@
 #!/bin/bash
 export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-nvm use
+ if [ -s "$NVM_DIR/nvm.sh" ]; then
+   . "$NVM_DIR/nvm.sh"
+   nvm use
+ fi
 
 service docker start
 
@@ -19,7 +21,7 @@ tmux send-keys -t dev_session:mage_build "bash -lc 'cd $PWD_DIR && mage -v build
 
 # Split horizontally for npm
 tmux split-window -h -t dev_session
-tmux send-keys -t dev_session "bash -lc '$PWD_DIR/run-dev.sh'" C-m
+tmux send-keys -t dev_session "cd $PWD_DIR && npm run dev" C-m
 
 # Split vertically for docker
 tmux split-window -v -t dev_session

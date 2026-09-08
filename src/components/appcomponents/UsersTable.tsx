@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import '../components/appcomponents/UsersTable.css';
+import './UsersTable.css';
 
 type User = {
   id: number;
@@ -153,7 +153,7 @@ export const UsersTable: React.FC<Props> = ({
                       <td>
                         {isEditing ? (
                           <input
-                            className="edit-input"
+                            className="edit-input" aria-label={`Edit username for user ${user.id}`}
                             value={editingUser.username}
                             onChange={(e) =>
                               setEditingUser({
