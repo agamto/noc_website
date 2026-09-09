@@ -3,7 +3,7 @@ import { lastValueFrom } from 'rxjs';
 import { css } from '@emotion/css';
 import { AppPluginMeta, GrafanaTheme2, PluginConfigPageProps, PluginMeta, SelectableValue } from '@grafana/data';
 import { getBackendSrv } from '@grafana/runtime';
-import { Button, Field, FieldSet, Input, RadioButtonGroup, SecretInput, Select, useStyles2 } from '@grafana/ui';
+import { Button, Combobox, ComboboxOption, Field, FieldSet, Input, RadioButtonGroup, SecretInput, useStyles2 } from '@grafana/ui';
 import {testIds} from '../testIds'
 // Keys mirror what grafana-aws-sdk's awsds.AWSDatasourceSettings unmarshals from jsonData.
 type AwsAuthType = 'default' | 'credentials' | 'keys' | 'ec2_iam_role';
@@ -13,7 +13,7 @@ const storageTypeOptions: Array<SelectableValue<'local' | 's3'>> = [
   { label: 'Amazon S3', value: 's3' },
 ];
 
-const awsAuthTypeOptions: Array<SelectableValue<AwsAuthType>> = [
+const awsAuthTypeOptions: Array<ComboboxOption<AwsAuthType>> = [
   { label: 'AWS SDK Default', value: 'default' },
   { label: 'Credentials file', value: 'credentials' },
   { label: 'Access & secret key', value: 'keys' },
@@ -240,7 +240,7 @@ const AppConfig = ({ plugin }: AppConfigProps) => {
         </Field>
         {storageState.documentStorage === 's3' && (
           <>
-            <Field label="S3 bucket" description="Uses the ECS task role; do not enter AWS access keys." className={s.marginTop}>
+            <Field label="S3 bucket" description="S3 bucket used for document storage (configure AWS auth below)." className={s.marginTop}>
               <Input
                 width={60}
                 value={storageState.documentS3Bucket}
@@ -283,14 +283,14 @@ const AppConfig = ({ plugin }: AppConfigProps) => {
               />
             </Field>
             <Field label="Auth Provider" description="How the plugin obtains AWS credentials." className={s.marginTop}>
-              <Select
-                inputId="aws-auth-type"
-                aria-label="Auth Provider"
+              <Combobox
+                id="aws-auth-type"
+                data-testid="aws-auth-type"
                 width={40}
                 options={awsAuthTypeOptions}
                 value={storageState.authType}
                 onChange={(option) =>
-                  setStorageState((previous) => ({ ...previous, authType: option?.value ?? 'default' }))
+                  setStorageState((previous) => ({ ...previous, authType: option.value }))
                 }
               />
             </Field>

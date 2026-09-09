@@ -17,7 +17,6 @@ const dismissWhatsNewSplash = async (page: Page) => {
   if (splashDismissed) {
     return;
   }
-  splashDismissed = true;
 
   const settings = await page.request.get('/api/frontend/settings');
   if (!settings.ok()) {
@@ -32,6 +31,7 @@ const dismissWhatsNewSplash = async (page: Page) => {
   if (!user.ok()) {
     return;
   }
+  splashDismissed = true;
   const collection = '/apis/userstorage.grafana.app/v0alpha1/namespaces/default/user-storage';
   const resource = {
     apiVersion: 'userstorage.grafana.app/v0alpha1',

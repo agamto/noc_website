@@ -22,27 +22,20 @@ test('should be possible to save app configuration', async ({ appConfigPage, pag
   await expect(saveResponse).toBeOK();
 });
 
-// Leaving the plugin on S3 routes every later docs test at a bucket that does not exist.
-// Each settings write restarts the plugin backend, so only write when there is S3 state to undo.
-test.afterEach(async ({ page }) => {
-  const response = await page.request.get(`/api/plugins/${pluginJson.id}/settings`);
-  if (!response.ok()) {
-    return;
-  }
-  const settings = await response.json();
-  if (settings.jsonData?.documentStorage !== 's3') {
-    return;
-  }
-  await page.request.post(`/api/plugins/${pluginJson.id}/settings`, {
-    data: {
-      enabled: true,
-      pinned: settings.pinned ?? false,
-      jsonData: { ...settings.jsonData, documentStorage: 'local' },
-    },
-  });
-});
-
 test('should save S3 document storage settings', async ({ appConfigPage, page }) => {
+  // One Grafana is shared by all workers, so persisting s3 would point every docs test in
+  // every other worker at a bucket that does not exist. Assert the payload, store nothing.
+  await page.route(
+    (url) => url.pathname.endsWith(`/api/plugins/${pluginJson.id}/settings`),
+    async (route) => {
+      if (route.request().method() !== 'POST') {
+        await route.continue();
+        return;
+      }
+      await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
+    }
+  );
+
   const s3Radio = page.getByRole('radio', { name: 'Amazon S3' });
   await s3Radio.click();
   await expect(s3Radio).toBeChecked();
