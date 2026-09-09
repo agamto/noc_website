@@ -11,6 +11,7 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/resource/httpadapter"
+	"github.com/main/noc-app/pkg/plugin/auth"
 )
 
 // Make sure App implements required interfaces. This is important to do
@@ -55,7 +56,22 @@ func NewApp(ctx context.Context, settings backend.AppInstanceSettings) (instance
 		}
 		documentStore = localDocumentStore{root: docsDir}
 	case "s3":
-		store, err := newS3DocumentStore(ctx, storageSettings.DocumentS3Bucket, storageSettings.DocumentS3Prefix, storageSettings.DocumentS3Region)
+		authProvider, err := auth.NewAWSClientProvider(ctx, backend.DataSourceInstanceSettings{
+			JSONData: settings.JSONData,
+			DecryptedSecureJSONData: settings.DecryptedSecureJSONData,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("load AWS auth settings: %w", err)
+		}
+		region := storageSettings.DocumentS3Region
+		if region == "" {
+			region = os.Getenv("AWS_REGION")
+		}
+		awsConfig, err := authProvider.GetAWSConfig(ctx, region)
+		if err != nil {
+			return nil, fmt.Errorf("load AWS configuration: %w", err)
+		}
+		store, err := newS3DocumentStore(storageSettings.DocumentS3Bucket, storageSettings.DocumentS3Prefix, awsConfig)
 		if err != nil {
 			return nil, err
 		}

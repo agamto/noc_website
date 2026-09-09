@@ -14,7 +14,6 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/smithy-go"
 )
@@ -126,20 +125,12 @@ type s3DocumentStore struct {
 	prefix string
 }
 
-func newS3DocumentStore(ctx context.Context, bucket, prefix, region string) (*s3DocumentStore, error) {
+func newS3DocumentStore(bucket, prefix string, config aws.Config) (*s3DocumentStore, error) {
 	if bucket == "" {
 		return nil, fmt.Errorf("S3 document storage requires a bucket")
 	}
 	if _, err := safeS3Prefix(prefix); err != nil {
 		return nil, err
-	}
-	options := make([]func(*awsconfig.LoadOptions) error, 0, 1)
-	if region != "" {
-		options = append(options, awsconfig.WithRegion(region))
-	}
-	config, err := awsconfig.LoadDefaultConfig(ctx, options...)
-	if err != nil {
-		return nil, fmt.Errorf("load AWS configuration: %w", err)
 	}
 	return &s3DocumentStore{client: s3.NewFromConfig(config), bucket: bucket, prefix: strings.Trim(prefix, "/")}, nil
 }
