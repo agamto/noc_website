@@ -7,12 +7,16 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/resource/httpadapter"
 	"github.com/main/noc-app/pkg/plugin/auth"
 )
+
+// defaultGrafanaDataPath is the EFS-backed Grafana data directory used when GF_PATHS_DATA is absent.
+const defaultGrafanaDataPath = "/var/lib/grafana"
 
 // Make sure App implements required interfaces. This is important to do
 // since otherwise we will only get a not implemented error response from plugin in
@@ -46,9 +50,11 @@ func NewApp(ctx context.Context, settings backend.AppInstanceSettings) (instance
 	var documentStore DocumentStore
 	switch storageSettings.DocumentStorage {
 	case "", "local":
+		// GF_PATHS_DATA is not forwarded to plugin processes, and os.TempDir() is ephemeral
+		// on Fargate, so fall back to the EFS-backed Grafana data directory.
 		dataPath := os.Getenv("GF_PATHS_DATA")
 		if dataPath == "" {
-			dataPath = os.TempDir()
+			dataPath = defaultGrafanaDataPath
 		}
 		docsDir := filepath.Join(dataPath, "plugins", "main-noc-app", "docs")
 		if err := os.MkdirAll(docsDir, 0o750); err != nil {
@@ -98,10 +104,48 @@ func (a *App) Dispose() {
 	// cleanup
 }
 
+// healthCheckProbe is written and removed to verify write access. The name has no .md
+// suffix so it never appears in document listings if cleanup fails.
+const healthCheckProbe = ".grafana-health-check"
+
 // CheckHealth handles health checks sent from Grafana to the plugin.
-func (a *App) CheckHealth(_ context.Context, _ *backend.CheckHealthRequest) (*backend.CheckHealthResult, error) {
+// It exercises the configured storage end to end: listing proves read access, and the
+// probe write proves the credentials can actually create and remove documents.
+func (a *App) CheckHealth(ctx context.Context, _ *backend.CheckHealthRequest) (*backend.CheckHealthResult, error) {
+	if a.documentStore == nil {
+		return &backend.CheckHealthResult{
+			Status:  backend.HealthStatusError,
+			Message: "Document storage is not configured",
+		}, nil
+	}
+
+	// Bound the check so a credential or network stall fails fast instead of hanging the UI.
+	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+
+	if _, err := a.documentStore.ListDocuments(ctx, ""); err != nil {
+		return &backend.CheckHealthResult{
+			Status:  backend.HealthStatusError,
+			Message: fmt.Sprintf("Cannot read from document storage: %s", err),
+		}, nil
+	}
+
+	if err := a.documentStore.Put(ctx, healthCheckProbe, ""); err != nil {
+		return &backend.CheckHealthResult{
+			Status:  backend.HealthStatusError,
+			Message: fmt.Sprintf("Cannot write to document storage: %s", err),
+		}, nil
+	}
+
+	if err := a.documentStore.Delete(ctx, healthCheckProbe); err != nil {
+		return &backend.CheckHealthResult{
+			Status:  backend.HealthStatusError,
+			Message: fmt.Sprintf("Cannot delete from document storage: %s", err),
+		}, nil
+	}
+
 	return &backend.CheckHealthResult{
 		Status:  backend.HealthStatusOk,
-		Message: "ok",
+		Message: "Document storage is readable and writable",
 	}, nil
 }

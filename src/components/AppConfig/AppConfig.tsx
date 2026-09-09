@@ -3,7 +3,7 @@ import { lastValueFrom } from 'rxjs';
 import { css } from '@emotion/css';
 import { AppPluginMeta, GrafanaTheme2, PluginConfigPageProps, PluginMeta, SelectableValue } from '@grafana/data';
 import { getBackendSrv } from '@grafana/runtime';
-import { Button, Combobox, ComboboxOption, Field, FieldSet, Input, RadioButtonGroup, SecretInput, useStyles2 } from '@grafana/ui';
+import { Alert, Button, Combobox, ComboboxOption, Field, FieldSet, Input, RadioButtonGroup, SecretInput, useStyles2 } from '@grafana/ui';
 import {testIds} from '../testIds'
 // Keys mirror what grafana-aws-sdk's awsds.AWSDatasourceSettings unmarshals from jsonData.
 type AwsAuthType = 'default' | 'credentials' | 'keys' | 'ec2_iam_role';
@@ -91,6 +91,10 @@ const AppConfig = ({ plugin }: AppConfigProps) => {
     isSecretKeySet: Boolean(secureJsonFields?.secretKey),
   });
   const isStorageSubmitDisabled = storageState.documentStorage === 's3' && !storageState.documentS3Bucket;
+  const [storageTest, setStorageTest] = useState<{ status: 'idle' | 'testing' | 'ok' | 'error'; message: string }>({
+    status: 'idle',
+    message: '',
+  });
 
   const onResetDBPassword= () =>
     setDBState({
@@ -124,7 +128,7 @@ const AppConfig = ({ plugin }: AppConfigProps) => {
       secureJsonData: Object.keys(secureJsonData).length ? secureJsonData : undefined,
     });
   };
-  const onStorageSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const onStorageSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (isStorageSubmitDisabled) {
       return;
@@ -138,23 +142,31 @@ const AppConfig = ({ plugin }: AppConfigProps) => {
         secureJsonData.secretKey = storageState.secretKey;
       }
     }
-    updatePluginAndReload(plugin.meta.id, {
-      enabled,
-      pinned,
-      jsonData: {
-        ...jsonData,
-        documentStorage: storageState.documentStorage,
-        documentS3Bucket: storageState.documentS3Bucket,
-        documentS3Prefix: storageState.documentS3Prefix,
-        documentS3Region: storageState.documentS3Region,
-        authType: storageState.authType,
-        profile: storageState.authType === 'credentials' ? storageState.profile : '',
-        assumeRoleARN: storageState.assumeRoleARN,
-        externalId: storageState.externalId,
-        endpoint: storageState.endpoint,
-      },
-      secureJsonData: Object.keys(secureJsonData).length ? secureJsonData : undefined,
-    });
+
+    setStorageTest({ status: 'testing', message: 'Saving and testing...' });
+    try {
+      await updatePlugin(plugin.meta.id, {
+        enabled,
+        pinned,
+        jsonData: {
+          ...jsonData,
+          documentStorage: storageState.documentStorage,
+          documentS3Bucket: storageState.documentS3Bucket,
+          documentS3Prefix: storageState.documentS3Prefix,
+          documentS3Region: storageState.documentS3Region,
+          authType: storageState.authType,
+          profile: storageState.authType === 'credentials' ? storageState.profile : '',
+          assumeRoleARN: storageState.assumeRoleARN,
+          externalId: storageState.externalId,
+          endpoint: storageState.endpoint,
+        },
+        secureJsonData: Object.keys(secureJsonData).length ? secureJsonData : undefined,
+      });
+      const health = await checkPluginHealth(plugin.meta.id);
+      setStorageTest({ status: 'ok', message: health });
+    } catch (error) {
+      setStorageTest({ status: 'error', message: healthErrorMessage(error) });
+    }
   };
 
   return (
@@ -393,9 +405,17 @@ const AppConfig = ({ plugin }: AppConfigProps) => {
           </>
         )}
         <div className={s.marginTop}>
-          <Button title="Save document storage" type="submit" data-testid="save-document-storage" disabled={isStorageSubmitDisabled}>
-            Save document storage
+          <Button title="Save document storage" type="submit" data-testid="save-document-storage" disabled={isStorageSubmitDisabled || storageTest.status === 'testing'}>
+            {storageTest.status === 'testing' ? 'Saving & testing...' : 'Save & test'}
           </Button>
+          {storageTest.status !== 'idle' && (
+            <div className={s.marginTop} data-testid="storage-test-result">
+              <Alert
+                severity={storageTest.status === 'error' ? 'error' : storageTest.status === 'ok' ? 'success' : 'info'}
+                title={storageTest.message}
+              />
+            </div>
+          )}
         </div>
       </FieldSet>
       </form>
@@ -435,4 +455,24 @@ const updatePlugin = async (pluginId: string, data: Partial<PluginMeta>) => {
   });
 
   return lastValueFrom(response);
+};
+
+// Saving settings restarts the plugin backend, so the first health call can land mid-restart.
+const checkPluginHealth = async (pluginId: string): Promise<string> => {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const health = await getBackendSrv().get<{ message?: string }>(`/api/plugins/${pluginId}/health`);
+      return health?.message || 'Document storage is reachable';
+    } catch (error) {
+      lastError = error;
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+  }
+  throw lastError;
+};
+
+const healthErrorMessage = (error: unknown): string => {
+  const data = (error as { data?: { message?: string; error?: string } })?.data;
+  return data?.message || data?.error || 'Unable to reach document storage';
 };

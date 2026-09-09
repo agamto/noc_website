@@ -60,4 +60,5 @@ test('should save S3 document storage settings', async ({ appConfigPage, page })
     },
   });
   await expect(saveResponse).toBeOK();
+  await expect(page.getByTestId('storage-test-result')).toBeVisible();
 });
