@@ -104,9 +104,9 @@ func (a *App) Dispose() {
 	// cleanup
 }
 
-// healthCheckProbe is written and removed to verify write access. The name has no .md
-// suffix so it never appears in document listings if cleanup fails.
-const healthCheckProbe = ".grafana-health-check"
+// healthCheckProbe is written and removed to verify write access. It must end in .md to
+// satisfy safeDocumentPath, so it is deleted immediately after the write succeeds.
+const healthCheckProbe = ".grafana-health-check.md"
 
 // CheckHealth handles health checks sent from Grafana to the plugin.
 // It exercises the configured storage end to end: listing proves read access, and the
