@@ -23,6 +23,9 @@ func (s *mockCallResourceResponseSender) Send(response *backend.CallResourceResp
 // TestCallResource tests CallResource calls, using backend.CallResourceRequest and backend.CallResourceResponse.
 // This ensures the httpadapter for CallResource works correctly.
 func TestCallResource(t *testing.T) {
+	// Without this the local store falls back to /var/lib/grafana, which is not writable in CI.
+	t.Setenv("GF_PATHS_DATA", t.TempDir())
+
 	// Initialize app
 	inst, err := NewApp(context.Background(), backend.AppInstanceSettings{JSONData: []byte(`{}`)})
 	if err != nil {

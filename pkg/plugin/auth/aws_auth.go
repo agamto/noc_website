@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/grafana/grafana-aws-sdk/pkg/awsauth"
@@ -110,12 +111,40 @@ func (p *AWSClientProvider) GetAWSConfig(ctx context.Context, region string) (aw
 	}
 
 	// Handle per-datasource HTTP proxy settings
-	authSettings.PerDatasourceProxySettings = &awsauth.PerDatasourceProxySettings{
-		ProxyType:     awsauth.ProxyType(p.Settings.ProxyType),
-		ProxyUrl:      p.Settings.ProxyUrl,
-		ProxyUsername: p.Settings.ProxyUsername,
-		ProxyPassword: p.Settings.ProxyPassword,
+	// Only set when a proxy is actually configured; a non-nil value with an empty ProxyType
+	// installs a dialer that breaks the AWS credential chain.
+	if p.Settings.ProxyType != "" {
+		authSettings.PerDatasourceProxySettings = &awsauth.PerDatasourceProxySettings{
+			ProxyType:     awsauth.ProxyType(p.Settings.ProxyType),
+			ProxyUrl:      p.Settings.ProxyUrl,
+			ProxyUsername: p.Settings.ProxyUsername,
+			ProxyPassword: p.Settings.ProxyPassword,
+		}
 	}
 
-	return p.AWSConfigProvider.GetConfig(ctx, authSettings)
+	// Diagnostic: records which credential source the SDK actually selected.
+	// Presence only - the container credentials URI is a secret-bearing path.
+	logger := backend.Logger.FromContext(ctx)
+	logger.Info("resolving AWS credentials",
+		"authType", string(authSettings.GetAuthType()),
+		"region", region,
+		"hasContainerRelativeURI", os.Getenv("AWS_CONTAINER_CREDENTIALS_RELATIVE_URI") != "",
+		"hasContainerFullURI", os.Getenv("AWS_CONTAINER_CREDENTIALS_FULL_URI") != "",
+		"hasWebIdentityToken", os.Getenv("AWS_WEB_IDENTITY_TOKEN_FILE") != "",
+		"imdsDisabled", os.Getenv("AWS_EC2_METADATA_DISABLED"),
+		"hasStaticKeys", p.Settings.AccessKey != "",
+	)
+
+	cfg, err := p.AWSConfigProvider.GetConfig(ctx, authSettings)
+	if err != nil {
+		return aws.Config{}, err
+	}
+
+	if creds, credErr := cfg.Credentials.Retrieve(ctx); credErr != nil {
+		logger.Error("AWS credential retrieval failed", "error", credErr)
+	} else {
+		logger.Info("AWS credentials resolved", "source", creds.Source)
+	}
+
+	return cfg, nil
 }

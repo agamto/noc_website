@@ -64,6 +64,9 @@ func (store localDocumentStore) ListDocuments(_ context.Context, folder string) 
 		return nil, err
 	}
 	entries, err := os.ReadDir(folderPath)
+	if errors.Is(err, os.ErrNotExist) {
+		return []string{}, nil
+	}
 	if err != nil {
 		return nil, err
 	}
