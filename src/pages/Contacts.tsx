@@ -6,7 +6,6 @@ import { PluginPage,getBackendSrv } from '@grafana/runtime';
 import '../style/Contacts.css'
 import { UsersTable } from '../components/appcomponents/UsersTable'
 import {AddUser} from '../components/appcomponents/AddUser'
-import SearchBar from "../components/appcomponents/SearchBar"
 import { AppPageHeader } from '../components/AppPageHeader';
 import { BackToMainLink } from '../components/BackToMainLink';
 function PageFive() {
@@ -15,17 +14,28 @@ function PageFive() {
   const [isVisible, setIsVisible] = useState(false);
   const [page, setPage] = useState(1);
   const [limit] = useState(5);
+  const [totalUsers, setTotalUsers] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState("");
+  const [teamFilter, setTeamFilter] = useState("");
+  const [teams, setTeams] = useState<string[]>([]);
+  const [usernames, setUsernames] = useState<string[]>([]);
 
-  const getUsers = useCallback(async (pageNum: number,startStr ="") => {
+  const getUsers = useCallback(async (pageNum: number,startStr ="", team = "") => {
   try {
     pageNum = pageNum? pageNum : 1
+    const query = new URLSearchParams({
+      page: String(pageNum),
+      limit: String(limit),
+      start: startStr,
+      team,
+    });
     const res = await getBackendSrv().get(
-      `/api/plugins/main-noc-app/resources/users?page=${pageNum}&limit=${limit}&start=${startStr}`
+      `/api/plugins/main-noc-app/resources/users?${query}`
     );
     setUsers(Array.isArray(res.data) ? res.data : []);
     setPage(res.page);
+    setTotalUsers(res.total ?? 0);
     setTotalPages(res.totalPages ?? 1);
     return res;
   } catch (err) {
@@ -34,9 +44,27 @@ function PageFive() {
   }
 }, [limit]); // ✅ stable unless 'limit' changes
 
+  const getTeams = useCallback(async () => {
+    try {
+      const response = await getBackendSrv().get('/api/plugins/main-noc-app/resources/teams');
+      setTeams(Array.isArray(response) ? response : response.data ?? []);
+    } catch (err) {
+      console.error('Failed to fetch teams:', err);
+    }
+  }, []);
+
+  const getUsernames = useCallback(async () => {
+    try {
+      const response = await getBackendSrv().get('/api/plugins/main-noc-app/resources/usernames');
+      setUsernames(Array.isArray(response) ? response : response.data ?? []);
+    } catch (err) {
+      console.error('Failed to fetch usernames:', err);
+    }
+  }, []);
+
   const handleDelete = async (id: number) => {
     await getBackendSrv().delete(`/api/plugins/main-noc-app/resources/delete/user/${id}`);
-    await getUsers(page,search); // refresh table
+    await Promise.all([getUsers(page,search, teamFilter), getTeams(), getUsernames()]); // refresh table and suggestions
   };
   const handleAdd = async (userName: string, phoneNumber: string, team: string) => {
     try{
@@ -46,7 +74,7 @@ function PageFive() {
         team: team
       }
       const res = await getBackendSrv().post(`/api/plugins/main-noc-app/resources/user`,data);
-      await getUsers(page,search);
+      await Promise.all([getUsers(page,search, teamFilter), getTeams(), getUsernames()]);
      return res;
     } catch (err) {
       console.error('Failed to post new user:',err);
@@ -59,14 +87,25 @@ function PageFive() {
       phonenumber: phoneNumber,
       team,
     });
-    await getUsers(page, search);
+    await Promise.all([getUsers(page, search, teamFilter), getTeams(), getUsernames()]);
   };
   useEffect(() => {
-    getUsers(page,search);
-  }, [page,search, getUsers]);
+    getUsers(page,search, teamFilter);
+  }, [page,search, teamFilter, getUsers]);
+
+  useEffect(() => {
+    getTeams();
+  }, [getTeams]);
+  useEffect(() => {
+    getUsernames();
+  }, [getUsernames]);
   const handleSearch = async (value: string) => {
     setSearch(value);       // save the value in state
-    await getUsers(1, value);     // call your function with the current search string
+    await getUsers(1, value, teamFilter);     // call your function with the current search string
+  };
+  const handleTeamFilterChange = (value: string) => {
+    setPage(1);
+    setTeamFilter(value);
   };
   const handleClick = () => {
     setIsVisible(!isVisible); // toggle true/false
@@ -79,16 +118,13 @@ function PageFive() {
         </AppPageHeader>
           <div className={s.content}>contacts</div>
           <div className={s.centered}>
-            <button title={!isVisible ? "add user" : "close"} className={s.addUser} onClick={handleClick}> {!isVisible ? "add user" : "close"} </button>
+            <button title={!isVisible ? "add user" : "close"} className="add-user-toggle" onClick={handleClick}> {!isVisible ? "add user" : "close"} </button>
           </div>
           <div>
           {isVisible &&<AddUser addNewUser={handleAdd}></AddUser>}
           </div>
           <div>
-            <SearchBar onSearch={handleSearch} />
-          </div>
-          <div>
-            <UsersTable users={users} page={page} totalPages={totalPages} currentSearch={search} onPageChange={(newPage: any) => getUsers(newPage,search)} onDelete={handleDelete} onUpdate={handleUpdate} />
+            <UsersTable users={users} page={page} totalUsers={totalUsers} totalPages={totalPages} usernames={usernames} teams={teams} userFilter={search} teamFilter={teamFilter} onUserFilterChange={handleSearch} onTeamFilterChange={handleTeamFilterChange} onPageChange={(newPage) => getUsers(newPage, search, teamFilter)} onDelete={handleDelete} onUpdate={handleUpdate} />
           </div>
         </div>
     </PluginPage>
@@ -128,10 +164,6 @@ const getStyles = (theme: GrafanaTheme2) => ({
     display:flex;
     justify-content: center;
     align-items: center;
-  `,
-  addUser: css `
-    height: 20%;
-    width:15%;
   `,
 });
 

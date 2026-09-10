@@ -11,9 +11,15 @@ type User = {
 type Props = {
   users: User[];
   page: number;
-  currentSearch: string;
+  totalUsers: number;
+  usernames: string[];
+  teams: string[];
+  userFilter: string;
+  teamFilter: string;
   totalPages: number;
-  onPageChange: (page: number, search: string) => void;
+  onPageChange: (page: number) => void;
+  onUserFilterChange: (user: string) => void;
+  onTeamFilterChange: (team: string) => void;
   onDelete: (id: number) => void;
   onUpdate: (
     id: number,
@@ -28,13 +34,20 @@ export const UsersTable: React.FC<Props> = ({
   onDelete,
   onUpdate,
   page,
+  totalUsers,
   totalPages,
-  currentSearch,
+  usernames,
+  teams,
+  userFilter,
+  teamFilter,
   onPageChange,
+  onUserFilterChange,
+  onTeamFilterChange,
 }) => {
   const [sortColumn, setSortColumn] = useState<keyof User | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [pendingDeleteUserId, setPendingDeleteUserId] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
 
   const handleSort = (column: keyof User) => {
@@ -91,6 +104,32 @@ export const UsersTable: React.FC<Props> = ({
     return sortDirection === 'asc' ? '↑' : '↓';
   };
 
+  const handleDeleteClick = (userId: number) => {
+    if (pendingDeleteUserId === userId) {
+      onDelete(userId);
+      setPendingDeleteUserId(null);
+      return;
+    }
+
+    setPendingDeleteUserId(userId);
+  };
+
+  const suggestedTeam = teamFilter
+    ? teams.find((team) => {
+        const normalizedTeam = team.toLocaleLowerCase();
+        const normalizedFilter = teamFilter.toLocaleLowerCase();
+        return normalizedTeam.startsWith(normalizedFilter) && normalizedTeam !== normalizedFilter;
+      })
+    : undefined;
+
+  const suggestedUsername = userFilter
+    ? usernames.find((username) => {
+        const normalizedUsername = username.toLocaleLowerCase();
+        const normalizedFilter = userFilter.toLocaleLowerCase();
+        return normalizedUsername.startsWith(normalizedFilter) && normalizedUsername !== normalizedFilter;
+      })
+    : undefined;
+
   return (
     <div className="users-page">
       <div className="users-card">
@@ -103,8 +142,69 @@ export const UsersTable: React.FC<Props> = ({
           </div>
 
           <span className="user-count">
-            {users.length} users
+            {totalUsers} users
           </span>
+        </div>
+
+        <div className="table-filters">
+          <div className="table-filter-field">
+            <label htmlFor="user-filter">Filter by user</label>
+            <div className="user-autocomplete">
+              {suggestedUsername && (
+                <div id="user-filter-suggestions" className="user-autocomplete-suggestion" role="listbox" dir="auto">
+                  <span role="option" aria-selected="true">{suggestedUsername}</span>
+                </div>
+              )}
+              <input
+                id="user-filter"
+                className="user-filter-input"
+                type="search"
+                dir="auto"
+                role="combobox"
+                aria-autocomplete="both"
+                aria-expanded={Boolean(suggestedUsername)}
+                aria-controls={suggestedUsername ? 'user-filter-suggestions' : undefined}
+                value={userFilter}
+                onChange={(event) => onUserFilterChange(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Tab' && suggestedUsername) {
+                    event.preventDefault();
+                    onUserFilterChange(suggestedUsername);
+                  }
+                }}
+                placeholder="User name"
+              />
+            </div>
+          </div>
+          <div className="table-filter-field">
+            <label htmlFor="team-filter">Filter by team</label>
+            <div className="team-autocomplete">
+              {suggestedTeam && (
+                <div id="team-filter-suggestions" className="team-autocomplete-suggestion" role="listbox" dir="auto">
+                  <span role="option" aria-selected="true">{suggestedTeam}</span>
+                </div>
+              )}
+              <input
+                id="team-filter"
+                className="team-filter-input"
+                type="search"
+                dir="auto"
+                role="combobox"
+                aria-autocomplete="both"
+                aria-expanded={Boolean(suggestedTeam)}
+                aria-controls={suggestedTeam ? 'team-filter-suggestions' : undefined}
+                value={teamFilter}
+                onChange={(event) => onTeamFilterChange(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Tab' && suggestedTeam) {
+                    event.preventDefault();
+                    onTeamFilterChange(suggestedTeam);
+                  }
+                }}
+                placeholder="Team name"
+              />
+            </div>
+          </div>
         </div>
 
         {/* Table */}
@@ -145,6 +245,7 @@ export const UsersTable: React.FC<Props> = ({
               ) : (
                 sortedUsers.map((user) => {
                   const isEditing = editingUser?.id === user.id;
+                  const isDeletePending = pendingDeleteUserId === user.id;
 
                   return (
                     <tr key={user.id}>
@@ -238,17 +339,29 @@ export const UsersTable: React.FC<Props> = ({
                             <>
                               <button
                                 className="btn btn-edit"
-                                onClick={() => setEditingUser(user)}
+                                onClick={() => {
+                                  setPendingDeleteUserId(null);
+                                  setEditingUser(user);
+                                }}
                               >
                                 ✎ Edit
                               </button>
 
                               <button
                                 className="btn btn-delete"
-                                onClick={() => onDelete(user.id)}
+                                onClick={() => handleDeleteClick(user.id)}
                               >
-                                🗑 Delete
+                                {isDeletePending ? 'Confirm delete' : '🗑 Delete'}
                               </button>
+
+                              {isDeletePending && (
+                                <button
+                                  className="btn btn-cancel"
+                                  onClick={() => setPendingDeleteUserId(null)}
+                                >
+                                  Cancel
+                                </button>
+                              )}
                             </>
                           )}
                         </div>
@@ -271,9 +384,7 @@ export const UsersTable: React.FC<Props> = ({
             <button
               className="page-btn"
               disabled={page === 1}
-              onClick={() =>
-                onPageChange(page - 1, currentSearch)
-              }
+              onClick={() => onPageChange(page - 1)}
             >
               ←
             </button>
@@ -287,9 +398,7 @@ export const UsersTable: React.FC<Props> = ({
                 className={`page-btn ${
                   page === p ? 'active' : ''
                 }`}
-                onClick={() =>
-                  onPageChange(p, currentSearch)
-                }
+                onClick={() => onPageChange(p)}
               >
                 {p}
               </button>
@@ -298,9 +407,7 @@ export const UsersTable: React.FC<Props> = ({
             <button
               className="page-btn"
               disabled={page === totalPages}
-              onClick={() =>
-                onPageChange(page + 1, currentSearch)
-              }
+              onClick={() => onPageChange(page + 1)}
             >
               →
             </button>

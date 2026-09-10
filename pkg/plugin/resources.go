@@ -190,6 +190,7 @@ func (a *App) handleGetUsers(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	startStr := req.URL.Query().Get("start")
+	teamStr := req.URL.Query().Get("team")
 	pageStr := req.URL.Query().Get("page")
 	limitStr := req.URL.Query().Get("limit")
 	page := 1
@@ -211,9 +212,9 @@ func (a *App) handleGetUsers(w http.ResponseWriter, req *http.Request) {
 	defer db.Close()
 	rows, err := db.Query(`SELECT id, username, team, phonenumber
 		 FROM public.users
-		 WHERE username LIKE $3 || '%'
+		 WHERE username LIKE $3 || '%' AND team LIKE $4 || '%'
 		 ORDER BY id
-		 LIMIT $1 OFFSET $2`, limit, offset, startStr)
+		 LIMIT $1 OFFSET $2`, limit, offset, startStr, teamStr)
 	if err != nil {
 		http.Error(w, "failed to query db: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -236,7 +237,7 @@ func (a *App) handleGetUsers(w http.ResponseWriter, req *http.Request) {
 		users = append(users, u)
 	}
 	var total int
-	err = db.QueryRow("SELECT COUNT(*) FROM public.users WHERE username LIKE $1 || '%'", startStr).Scan(&total)
+	err = db.QueryRow("SELECT COUNT(*) FROM public.users WHERE username LIKE $1 || '%' AND team LIKE $2 || '%'", startStr, teamStr).Scan(&total)
 	if err != nil {
 		http.Error(w, "failed to count users: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -256,6 +257,78 @@ func (a *App) handleGetUsers(w http.ResponseWriter, req *http.Request) {
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		http.Error(w, "failed to encode response: "+err.Error(), http.StatusInternalServerError)
 		return
+	}
+}
+
+func (a *App) handleGetTeams(w http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	db, err := ConnectToDB(a.settings)
+	if err != nil {
+		http.Error(w, "failed to connect to db: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+
+	rows, err := db.Query(`SELECT DISTINCT team FROM public.users WHERE team <> '' ORDER BY team`)
+	if err != nil {
+		http.Error(w, "failed to query teams: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	teams := make([]string, 0)
+	for rows.Next() {
+		var team string
+		if err := rows.Scan(&team); err != nil {
+			http.Error(w, "failed to scan team: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		teams = append(teams, team)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(teams); err != nil {
+		http.Error(w, "failed to encode teams: "+err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (a *App) handleGetUsernames(w http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	db, err := ConnectToDB(a.settings)
+	if err != nil {
+		http.Error(w, "failed to connect to db: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+
+	rows, err := db.Query(`SELECT DISTINCT username FROM public.users WHERE username <> '' ORDER BY username`)
+	if err != nil {
+		http.Error(w, "failed to query usernames: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	usernames := make([]string, 0)
+	for rows.Next() {
+		var username string
+		if err := rows.Scan(&username); err != nil {
+			http.Error(w, "failed to scan username: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		usernames = append(usernames, username)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(usernames); err != nil {
+		http.Error(w, "failed to encode usernames: "+err.Error(), http.StatusInternalServerError)
 	}
 }
 func (a *App) handleDeleteUser(w http.ResponseWriter, req *http.Request) {
@@ -410,6 +483,8 @@ func (a *App) registerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/ping", a.handlePing)
 	mux.HandleFunc("/echo", a.handleEcho)
 	mux.HandleFunc("/users", a.handleGetUsers)
+	mux.HandleFunc("/teams", a.handleGetTeams)
+	mux.HandleFunc("/usernames", a.handleGetUsernames)
 	mux.HandleFunc("/delete/user/", a.handleDeleteUser)
 	mux.HandleFunc("/user", a.handleAddUser)
 	mux.HandleFunc("/user/", a.handleUpdateUser)

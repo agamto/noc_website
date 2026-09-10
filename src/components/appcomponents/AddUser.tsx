@@ -1,7 +1,8 @@
 import React, { ChangeEvent,useState } from 'react';
 import { GrafanaTheme2 } from '@grafana/data';
 import { css } from '@emotion/css';
-import { Button, Field, FieldSet, Input, useStyles2 } from '@grafana/ui';
+import { Button, Field, Input, useStyles2 } from '@grafana/ui';
+import './AddUser.css';
 type State = {
     userName: string;
     phoneNumber: string;
@@ -33,7 +34,8 @@ export const AddUser: React.FC<Props> = ({ addNewUser }) => {
               e.preventDefault();
               onSubmit();
               }}>
-                <FieldSet label="add user">
+                <div className="add-user-card" role="group" aria-labelledby="add-user-title">
+                  <div id="add-user-title" className="add-user-card-title">add user</div>
                     <Field>
                         <Input
                           width={60}
@@ -64,12 +66,12 @@ export const AddUser: React.FC<Props> = ({ addNewUser }) => {
                           onChange={onStateChange}
                         />
                     </Field>
-                    <div className={s.marginTop}>
+                    <div className={`${s.marginTop} add-user-actions`}>
                       <Button title="Save User" type='submit' disabled={isSubmitDisabled}>
                         Save User
                       </Button>
                     </div>
-                </FieldSet>
+                </div>
             </form>
         </div>
     )
