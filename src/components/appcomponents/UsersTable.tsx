@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import '../components/appcomponents/UsersTable.css';
+import './UsersTable.css';
 
 type User = {
   id: number;
@@ -47,7 +47,7 @@ export const UsersTable: React.FC<Props> = ({
   };
 
   const sortedUsers = [...users].sort((a, b) => {
-    if (!sortColumn) return 0;
+    if (!sortColumn) {return 0;}
 
     const aValue = a[sortColumn];
     const bValue = b[sortColumn];
@@ -68,7 +68,7 @@ export const UsersTable: React.FC<Props> = ({
   });
 
   const handleSave = async () => {
-    if (!editingUser) return;
+    if (!editingUser) {return;}
 
     setSaving(true);
 
@@ -87,7 +87,7 @@ export const UsersTable: React.FC<Props> = ({
   };
 
   const sortIcon = (column: keyof User) => {
-    if (sortColumn !== column) return '↕';
+    if (sortColumn !== column) {return '↕';}
     return sortDirection === 'asc' ? '↑' : '↓';
   };
 
@@ -153,7 +153,7 @@ export const UsersTable: React.FC<Props> = ({
                       <td>
                         {isEditing ? (
                           <input
-                            className="edit-input"
+                            className="edit-input" aria-label={`Edit username for user ${user.id}`}
                             value={editingUser.username}
                             onChange={(e) =>
                               setEditingUser({
