@@ -52,20 +52,7 @@ func safeFolderPath(root, folder string) (string, error) {
 func (a *App) handleDocs(w http.ResponseWriter, req *http.Request) {
 	if req.URL.Path == "/docs/folders" {
 		if req.Method == http.MethodGet {
-			folders := make([]string, 0)
-			err := filepath.WalkDir(a.docsDir, func(path string, entry os.DirEntry, err error) error {
-				if err != nil {
-					return err
-				}
-				if entry.IsDir() && path != a.docsDir {
-					relative, relErr := filepath.Rel(a.docsDir, path)
-					if relErr != nil {
-						return relErr
-					}
-					folders = append(folders, filepath.ToSlash(relative))
-				}
-				return nil
-			})
+			folders, err := a.documentStore.ListFolders(req.Context())
 			if err != nil {
 				http.Error(w, "failed to list folders: "+err.Error(), http.StatusInternalServerError)
 				return
@@ -82,12 +69,11 @@ func (a *App) handleDocs(w http.ResponseWriter, req *http.Request) {
 				http.Error(w, "invalid folder body", http.StatusBadRequest)
 				return
 			}
-			folder, err := safeFolderPath(a.docsDir, body.Folder)
-			if err != nil || body.Folder == "" {
+			if body.Folder == "" {
 				http.Error(w, "invalid folder name", http.StatusBadRequest)
 				return
 			}
-			if err := os.MkdirAll(folder, 0o750); err != nil {
+			if err := a.documentStore.CreateFolder(req.Context(), body.Folder); err != nil {
 				http.Error(w, "failed to create folder: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -105,22 +91,7 @@ func (a *App) handleDocs(w http.ResponseWriter, req *http.Request) {
 			http.Error(w, "invalid move body", http.StatusBadRequest)
 			return
 		}
-		source, err := safeDocumentPath(a.docsDir, body.Name)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		destinationFolder, err := safeFolderPath(a.docsDir, body.Folder)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		if err := os.MkdirAll(destinationFolder, 0o750); err != nil {
-			http.Error(w, "failed to prepare folder: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-		destination := filepath.Join(destinationFolder, filepath.Base(body.Name))
-		if err := os.Rename(source, destination); err != nil {
+		if err := a.documentStore.Move(req.Context(), body.Name, body.Folder); err != nil {
 			http.Error(w, "failed to move document: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -131,21 +102,10 @@ func (a *App) handleDocs(w http.ResponseWriter, req *http.Request) {
 
 	if req.Method == http.MethodGet && req.URL.Path == "/docs" {
 		folder := req.URL.Query().Get("folder")
-		docsPath, err := safeFolderPath(a.docsDir, folder)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		entries, err := os.ReadDir(docsPath)
+		names, err := a.documentStore.ListDocuments(req.Context(), folder)
 		if err != nil {
 			http.Error(w, "failed to list documents: "+err.Error(), http.StatusInternalServerError)
 			return
-		}
-		names := make([]string, 0, len(entries))
-		for _, entry := range entries {
-			if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".md") {
-				names = append(names, entry.Name())
-			}
 		}
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(names)
@@ -153,15 +113,10 @@ func (a *App) handleDocs(w http.ResponseWriter, req *http.Request) {
 	}
 
 	name := strings.TrimPrefix(req.URL.Path, "/docs/")
-	path, err := safeDocumentPath(a.docsDir, name)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
 
 	switch req.Method {
 	case http.MethodGet:
-		content, err := os.ReadFile(path)
+		content, err := a.documentStore.Get(req.Context(), name)
 		if os.IsNotExist(err) {
 			http.Error(w, "document not found", http.StatusNotFound)
 			return
@@ -171,25 +126,21 @@ func (a *App) handleDocs(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(document{Name: name, Content: string(content)})
+		_ = json.NewEncoder(w).Encode(document{Name: name, Content: content})
 	case http.MethodPut:
 		var body document
 		if err := json.NewDecoder(req.Body).Decode(&body); err != nil {
 			http.Error(w, "invalid document body: "+err.Error(), http.StatusBadRequest)
 			return
 		}
-		if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
-			http.Error(w, "failed to create document folder: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-		if err := os.WriteFile(path, []byte(body.Content), 0o640); err != nil {
+		if err := a.documentStore.Put(req.Context(), name, body.Content); err != nil {
 			http.Error(w, "failed to save document: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(document{Name: name, Content: body.Content})
 	case http.MethodDelete:
-		if err := os.Remove(path); os.IsNotExist(err) {
+		if err := a.documentStore.Delete(req.Context(), name); os.IsNotExist(err) {
 			http.Error(w, "document not found", http.StatusNotFound)
 			return
 		} else if err != nil {

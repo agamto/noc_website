@@ -1,0 +1,113 @@
+?? branch-comparison.txt
+  agams_branch 6d2c077 [origin/agams_branch] fixed: playwright
+* main         b9b761e [origin/main] changed version to 1.0.2
+> 6d2c077 fixed: playwright
+> 889e9f9 added changes
+> 56e13b8 added changes
+> 5f16b51 added changes
+> fa893fa added changes
+> ba498e2 fixed playwright and ci for latest
+> ace0b47 fixed playwright and ci for latest
+> 74f8fc0 added: agents, changed front
+> 17a2760 added: new header
+> 6f5da50 fixed playwrite
+> 3bb8257 fixed playwrite
+> 7c1e64c changed logo
+> e82fcac changed logo
+> 7a327d8 changed to current
+> c6fb2d3 changed to current
+< b9b761e changed version to 1.0.2
+< 10547c5 removed unused version
+< deb427b Merge pull request #2 from agamto/agams_branch
+< af3e2e7 fixed test cases
+ .config/jest/mocks/fileMock.js                     |   1 +
+ .github/agents/frontend-css-reviewer.agent.md      |  22 ++
+ .github/agents/frontend-css.agent.md               |  19 ++
+ .github/agents/frontend-team-lead.agent.md         |  36 +++
+ .github/agents/go-backend-reviewer.agent.md        |  22 ++
+ .github/agents/go-backend-specialist.agent.md      |  24 ++
+ .github/agents/go-backend-team-lead.agent.md       |  23 ++
+ .github/agents/playwright-reviewer.agent.md        |  27 ++
+ .github/agents/playwright-specialist.agent.md      |  33 +++
+ .github/agents/playwright-team-lead.agent.md       |  23 ++
+ .github/agents/react-reviewer.agent.md             |  22 ++
+ .github/agents/react-specialist.agent.md           |  19 ++
+ .github/skills/frontend-reviewed-change/SKILL.md   |  22 ++
+ .../skills/grafana-playwright-coverage/SKILL.md    |  24 ++
+ .github/skills/specialist-team-scaffold/SKILL.md   |  23 ++
+ .github/workflows/ci.yml                           |   2 +-
+ .github/workflows/release.yml                      |  32 +-
+ jest.config.js                                     |   4 +
+ package-lock.json                                  |  14 +-
+ package.json                                       |   2 +-
+ pkg/plugin/utils.go                                |  24 +-
+ src/components/App/App.test.tsx                    |   4 +-
+ src/components/AppLogo.tsx                         |  32 ++
+ src/components/AppPageHeader.tsx                   |  25 ++
+ src/components/BackToMainLink.tsx                  |  12 +
+ src/components/Dashboard/DashboardPanels.tsx       | 124 ++++++++
+ src/components/Dashboard/DashboardPicker.tsx       | 162 +++++++++++
+ src/components/Dashboard/types.ts                  |   6 +
+ src/components/Docs/DocsHeader.tsx                 |  58 ++++
+ src/components/Docs/DocumentForms.tsx              | 122 ++++++++
+ src/components/Docs/DocumentTools.tsx              | 161 +++++++++++
+ src/components/Docs/SavedDocuments.tsx             | 247 ++++++++++++++++
+ src/components/Docs/types.ts                       |   4 +
+ src/img/logo.png                                   | Bin 0 -> 139987 bytes
+ src/img/logo.svg                                   |   1 -
+ src/pages/Contacts.tsx                             |  14 +-
+ src/pages/DashboardView.tsx                        | 238 +++++++++++++--
+ src/pages/Dashboards.tsx                           | 187 +++++-------
+ src/pages/Docs.tsx                                 | 322 ++++++---------------
+ src/pages/DocsEditor.tsx                           |  16 +-
+ src/pages/MainPage.tsx                             | 112 +++++--
+ src/plugin.json                                    |   8 +-
+ tatus --short                                      | 258 +++++++++++++++++
+ tests/appNavigation.spec.ts                        |  83 +++++-
+ tests/dashboardPicker.spec.ts                      |  94 ++++++
+ 45 files changed, 2251 insertions(+), 457 deletions(-)
+A	.config/jest/mocks/fileMock.js
+A	.github/agents/frontend-css-reviewer.agent.md
+A	.github/agents/frontend-css.agent.md
+A	.github/agents/frontend-team-lead.agent.md
+A	.github/agents/go-backend-reviewer.agent.md
+A	.github/agents/go-backend-specialist.agent.md
+A	.github/agents/go-backend-team-lead.agent.md
+A	.github/agents/playwright-reviewer.agent.md
+A	.github/agents/playwright-specialist.agent.md
+A	.github/agents/playwright-team-lead.agent.md
+A	.github/agents/react-reviewer.agent.md
+A	.github/agents/react-specialist.agent.md
+A	.github/skills/frontend-reviewed-change/SKILL.md
+A	.github/skills/grafana-playwright-coverage/SKILL.md
+A	.github/skills/specialist-team-scaffold/SKILL.md
+M	.github/workflows/ci.yml
+M	.github/workflows/release.yml
+M	jest.config.js
+M	package-lock.json
+M	package.json
+M	pkg/plugin/utils.go
+M	src/components/App/App.test.tsx
+A	src/components/AppLogo.tsx
+A	src/components/AppPageHeader.tsx
+A	src/components/BackToMainLink.tsx
+A	src/components/Dashboard/DashboardPanels.tsx
+A	src/components/Dashboard/DashboardPicker.tsx
+A	src/components/Dashboard/types.ts
+A	src/components/Docs/DocsHeader.tsx
+A	src/components/Docs/DocumentForms.tsx
+A	src/components/Docs/DocumentTools.tsx
+A	src/components/Docs/SavedDocuments.tsx
+A	src/components/Docs/types.ts
+A	src/img/logo.png
+D	src/img/logo.svg
+M	src/pages/Contacts.tsx
+M	src/pages/DashboardView.tsx
+M	src/pages/Dashboards.tsx
+M	src/pages/Docs.tsx
+M	src/pages/DocsEditor.tsx
+M	src/pages/MainPage.tsx
+M	src/plugin.json
+A	tatus --short
+M	tests/appNavigation.spec.ts
+A	tests/dashboardPicker.spec.ts
