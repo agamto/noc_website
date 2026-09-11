@@ -121,7 +121,7 @@ function PageFive() {
             <button title={!isVisible ? "add user" : "close"} className="add-user-toggle" onClick={handleClick}> {!isVisible ? "add user" : "close"} </button>
           </div>
           <div>
-          {isVisible &&<AddUser addNewUser={handleAdd}></AddUser>}
+          {isVisible &&<AddUser addNewUser={handleAdd} teams={teams}></AddUser>}
           </div>
           <div>
             <UsersTable users={users} page={page} totalUsers={totalUsers} totalPages={totalPages} usernames={usernames} teams={teams} userFilter={search} teamFilter={teamFilter} onUserFilterChange={handleSearch} onTeamFilterChange={handleTeamFilterChange} onPageChange={(newPage) => getUsers(newPage, search, teamFilter)} onDelete={handleDelete} onUpdate={handleUpdate} />

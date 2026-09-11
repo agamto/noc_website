@@ -63,3 +63,29 @@
 .add-user-card [class*="input-wrapper"] {
   max-width: 100%;
 }
+
+.field-autocomplete {
+  position: relative;
+  min-width: 0;
+}
+
+.field-autocomplete-suggestion {
+  position: absolute;
+  top: 50%;
+  inset-inline: 10px;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  font: inherit;
+  overflow: hidden;
+  pointer-events: none;
+  text-overflow: clip;
+  white-space: pre;
+  z-index: 0;
+}
+
+.field-autocomplete-input,
+.field-autocomplete-input input {
+  position: relative;
+  z-index: 1;
+  background: transparent !important;
+}
