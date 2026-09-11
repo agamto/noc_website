@@ -5,9 +5,43 @@ table {
 }
 
 td, th {
-  border: 1px solid #dddddd;
+  border: 1px solid #313030;
   text-align: left;
   padding: 8px;
   justify-content: center;
   align-items: center;
+}
+
+.add-user-toggle {
+  min-width: 112px;
+  height: 36px;
+  padding: 0 16px;
+  color: #ffffff;
+  font: inherit;
+  font-weight: 600;
+  background: #1877F2;
+  border: 1px solid #1877F2;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.add-user-toggle:hover {
+  background: #1568d4;
+  border-color: #1568d4;
+}
+
+.add-user-toggle:focus-visible {
+  outline: 2px solid #1568d4;
+  outline-offset: 2px;
+}
+
+.theme-dark .add-user-toggle {
+  background: #1877F2;
+  border-color: #1877F2;
+  color: #161719;
+}
+
+.theme-dark .add-user-toggle:hover {
+  background: #1568d4;
+  border-color: #1568d4;
 }
