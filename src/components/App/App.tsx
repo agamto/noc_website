@@ -8,6 +8,7 @@ const Docs = React.lazy(() => import('../../pages/Docs'));
 const DocsEditor = React.lazy(() => import('../../pages/DocsEditor'));
 const Dashboards = React.lazy(() => import('../../pages/Dashboards'));
 const DashboardView = React.lazy(() => import('../../pages/DashboardView'));
+const Chat = React.lazy(() => import('../../pages/Chat'));
 
 function App(props: AppRootProps) {
   return (
@@ -17,6 +18,7 @@ function App(props: AppRootProps) {
       <Route path={ROUTES.DOCS} element={<Docs />} />
       <Route path={ROUTES.DASHBOARDS} element={<Dashboards />} />
       <Route path={`${ROUTES.DASHBOARDS}/:uid`} element={<DashboardView />} />
+      <Route path={ROUTES.CHAT} element={<Chat />} />
       <Route path="*" element={<PageOne />} />
     </Routes>
   );

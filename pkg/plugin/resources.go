@@ -272,6 +272,10 @@ func (a *App) handleGetUsers(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	defer db.Close()
+	if err := ensureUsersSchema(db); err != nil {
+		http.Error(w, "failed to prepare users table: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
 	rows, err := db.Query(`SELECT id, username, team, phonenumber
 		 FROM public.users
 		 WHERE username LIKE $3 || '%'
@@ -345,6 +349,10 @@ func (a *App) handleDeleteUser(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	defer db.Close()
+	if err := ensureUsersSchema(db); err != nil {
+		http.Error(w, "failed to prepare users table: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
 	// run delete query
 	res, err := db.Exec("DELETE FROM public.users WHERE id = $1", id)
 	if err != nil {
@@ -395,6 +403,10 @@ func (a *App) handleAddUser(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	defer db.Close()
+	if err := ensureUsersSchema(db); err != nil {
+		http.Error(w, "failed to prepare users table: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
 	// Insert new user
 	var newID int
 	query := `INSERT INTO public.users (username, team, phonenumber) 
@@ -453,6 +465,10 @@ func (a *App) handleUpdateUser(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	defer db.Close()
+	if err := ensureUsersSchema(db); err != nil {
+		http.Error(w, "failed to prepare users table: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
 	result, err := db.Exec("UPDATE public.users SET username = $1, team = $2, phonenumber = $3 WHERE id = $4", body.Username, body.Team, body.Phonenumber, id)
 	if err != nil {
 		http.Error(w, "failed to update user: "+err.Error(), http.StatusInternalServerError)
@@ -478,4 +494,7 @@ func (a *App) registerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/user/", a.handleUpdateUser)
 	mux.HandleFunc("/docs", a.handleDocs)
 	mux.HandleFunc("/docs/", a.handleDocs)
+	mux.HandleFunc("/chat/models", a.handleChatModels)
+	mux.HandleFunc("/chat/sessions", a.handleChatSessions)
+	mux.HandleFunc("/chat/sessions/", a.handleChatSessionDetail)
 }
