@@ -36,6 +36,6 @@ describe('Components/AppConfig', () => {
     expect(screen.queryByTestId(testIds.appConfig.user)).toBeInTheDocument();
     expect(screen.queryByTestId(testIds.appConfig.dbname)).toBeInTheDocument();
     expect(screen.queryByTestId(testIds.appConfig.password)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Save DB settings/i })).toBeInTheDocument();
+    expect(screen.queryByTestId('save-db-settings')).toBeInTheDocument();
   });
 });

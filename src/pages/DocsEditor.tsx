@@ -1,14 +1,27 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { css } from '@emotion/css';
 import { GrafanaTheme2,PageLayoutType } from '@grafana/data';
 import { getBackendSrv, PluginPage } from '@grafana/runtime';
 import { Button, Combobox, useStyles2 } from '@grafana/ui';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { marked } from 'marked';
+import mammoth from 'mammoth';
 import { prefixRoute } from '../utils/utils.routing';
 import { ROUTES } from '../constants';
 import { AppPageHeader } from '../components/AppPageHeader';
 import { BackToMainLink } from '../components/BackToMainLink';
+import {
+  isBinaryDocument,
+  isHtmlDocument,
+  isImageDocument,
+  isPreviewableWordDocument,
+  isWordDocument,
+  mimeTypeForDocument,
+  mimeTypeForImage,
+  mimeTypeForWord,
+  tryBase64ToArrayBuffer,
+  wrapWordPreviewHtml,
+} from '../components/Docs/docTypes';
 
 type Document = { content: string };
 type EditorLocationState = { importedContent?: string; newDocument?: boolean };
@@ -35,10 +48,81 @@ function DocsEditor() {
   const [folderDocuments, setFolderDocuments] = useState<string[]>([]);
   const [moveFolder, setMoveFolder] = useState(currentFolder);
   const [textDirection, setTextDirection] = useState<'rtl' | 'ltr'>('rtl');
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  const isImage = isImageDocument(name);
+  const isHtml = isHtmlDocument(name);
+  const isWord = isWordDocument(name);
+  const isWordPreviewable = isWord && isPreviewableWordDocument(name);
+  const [wordPreviewHtml, setWordPreviewHtml] = useState('');
+  const [wordPreviewStatus, setWordPreviewStatus] = useState('');
+  const imageSrc = isImage
+    ? isBinaryDocument(name)
+      ? `data:${mimeTypeForImage(name)};base64,${content}`
+      : `data:${mimeTypeForImage(name)};charset=utf-8,${encodeURIComponent(content)}`
+    : '';
+  const wordHref = isWord ? `data:${mimeTypeForWord(name)};base64,${content}` : '';
 
   useEffect(() => {
     setMoveFolder(currentFolder);
   }, [currentFolder]);
+
+  useEffect(() => {
+    if (!isWordPreviewable || !content) {
+      setWordPreviewHtml('');
+      setWordPreviewStatus('');
+      return;
+    }
+
+    let isCurrent = true;
+    setWordPreviewStatus('Rendering preview...');
+    const arrayBuffer = tryBase64ToArrayBuffer(content);
+    if (!arrayBuffer) {
+      setWordPreviewHtml('');
+      setWordPreviewStatus('Preview unavailable for this document.');
+      return;
+    }
+
+    mammoth
+      .convertToHtml({ arrayBuffer })
+      .then((result) => {
+        if (isCurrent) {
+          setWordPreviewHtml(wrapWordPreviewHtml(result.value));
+          setWordPreviewStatus('');
+        }
+      })
+      .catch(() => {
+        if (isCurrent) {
+          setWordPreviewHtml('');
+          setWordPreviewStatus('Preview unavailable for this document.');
+        }
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [content, isWordPreviewable]);
+
+  useEffect(() => {
+    const updateFullscreenState = () => setIsFullscreen(document.fullscreenElement === contentRef.current);
+    document.addEventListener('fullscreenchange', updateFullscreenState);
+    return () => document.removeEventListener('fullscreenchange', updateFullscreenState);
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'F11') {
+        return;
+      }
+
+      event.preventDefault();
+      void toggleFullscreen();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  });
 
   useEffect(() => {
     getBackendSrv()
@@ -131,7 +215,37 @@ function DocsEditor() {
     navigate(prefixRoute(`${ROUTES.DOCS}/${encodeDocumentPath(documentPath)}`));
   };
 
-  const preview = marked.parse(content, { renderer: markdownRenderer }) as string;
+  const downloadDocument = () => {
+    if (isBinaryDocument(name)) {
+      const arrayBuffer = tryBase64ToArrayBuffer(content);
+      if (!arrayBuffer) {
+        setStatus('Unable to download document: content is corrupted');
+        return;
+      }
+      triggerDownload(new Blob([arrayBuffer], { type: mimeTypeForDocument(name) }));
+      return;
+    }
+    triggerDownload(new Blob([content], { type: mimeTypeForDocument(name) }));
+  };
+
+  const triggerDownload = (blob: Blob) => {
+    const url = URL.createObjectURL(blob);
+    const link = window.document.createElement('a');
+    link.href = url;
+    link.download = name;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const toggleFullscreen = async () => {
+    if (document.fullscreenElement) {
+      await document.exitFullscreen();
+    } else {
+      await contentRef.current?.requestFullscreen();
+    }
+  };
+
+  const preview = isHtml || isImage || isWord ? '' : (marked.parse(content, { renderer: markdownRenderer }) as string);
 
   return (
     <PluginPage layout={PageLayoutType.Canvas}>
@@ -145,22 +259,24 @@ function DocsEditor() {
         <div className={styles.header}>
           <h1 data-testid="document-title">{name}</h1>
           <div className={styles.headerActions}>
-            <div className={styles.directionControls} aria-label="Text direction">
-              <Button
-                variant={textDirection === 'rtl' ? 'primary' : 'secondary'}
-                aria-pressed={textDirection === 'rtl'}
-                onClick={() => setTextDirection('rtl')}
-              >
-                RTL
-              </Button>
-              <Button
-                variant={textDirection === 'ltr' ? 'primary' : 'secondary'}
-                aria-pressed={textDirection === 'ltr'}
-                onClick={() => setTextDirection('ltr')}
-              >
-                LTR
-              </Button>
-            </div>
+            {!isImage && !isWord && (
+              <div className={styles.directionControls} aria-label="Text direction">
+                <Button
+                  variant={textDirection === 'rtl' ? 'primary' : 'secondary'}
+                  aria-pressed={textDirection === 'rtl'}
+                  onClick={() => setTextDirection('rtl')}
+                >
+                  RTL
+                </Button>
+                <Button
+                  variant={textDirection === 'ltr' ? 'primary' : 'secondary'}
+                  aria-pressed={textDirection === 'ltr'}
+                  onClick={() => setTextDirection('ltr')}
+                >
+                  LTR
+                </Button>
+              </div>
+            )}
             <Combobox
               aria-label="Move document to folder"
               options={[{ label: 'Root', value: '' }, ...folders.map((folder) => ({ label: folder, value: folder }))]}
@@ -174,6 +290,22 @@ function DocsEditor() {
               placeholder="Choose document"
               onChange={(option) => openDocument(option?.value ?? '')}
             />
+            <Button
+              title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+              variant="secondary"
+              data-testid="toggle-fullscreen"
+              onClick={() => void toggleFullscreen()}
+            >
+              {isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+            </Button>
+            <Button
+              title="Download document"
+              variant="secondary"
+              data-testid="download-document"
+              onClick={downloadDocument}
+            >
+              Download
+            </Button>
             {isEditing ? (
               <>
                 <Button title="Save document" data-testid="save-document" onClick={saveDocument}>Save document</Button>
@@ -181,7 +313,7 @@ function DocsEditor() {
               </>
             ) : (
               <>
-                <Button title="Edit" data-testid="edit-document" onClick={() => setIsEditing(true)}>Edit</Button>
+                {!isImage && !isWord && <Button title="Edit" data-testid="edit-document" onClick={() => setIsEditing(true)}>Edit</Button>}
                 {isDeletePending ? (
                   <>
                     <Button title="Confirm delete" data-testid="confirm-delete" onClick={deleteDocument}>Confirm delete</Button>
@@ -195,24 +327,63 @@ function DocsEditor() {
             <span role="status">{status}</span>
           </div>
         </div>
-        {isEditing ? (
-          <textarea
-            aria-label="Markdown content"
-            data-testid="markdown-content"
-            dir={textDirection}
-            className={styles.editor}
-            rows={24}
-            value={content}
-            onChange={(event) => setContent(event.currentTarget.value)}
-          />
+        {isEditing && !isImage && !isWord ? (
+          <div ref={contentRef} className={styles.contentArea}>
+            <textarea
+              aria-label="Document content"
+              data-testid="markdown-content"
+              dir={textDirection}
+              className={styles.editor}
+              rows={24}
+              value={content}
+              onChange={(event) => setContent(event.currentTarget.value)}
+            />
+          </div>
+        ) : isImage ? (
+          <div ref={contentRef} className={`${styles.contentArea} ${styles.imageWrapper}`}>
+            <img src={imageSrc} alt={name} data-testid="image-preview" className={styles.imagePreview} />
+          </div>
+        ) : isWord ? (
+          <div ref={contentRef} className={`${styles.contentArea} ${styles.wordWrapper}`}>
+            {isWordPreviewable ? (
+              wordPreviewHtml ? (
+                <iframe
+                  title="Rendered Word document"
+                  data-testid="word-preview"
+                  sandbox=""
+                  srcDoc={wordPreviewHtml}
+                  className={styles.htmlPreview}
+                />
+              ) : (
+                <p role="status">{wordPreviewStatus}</p>
+              )
+            ) : (
+              <p>Preview isn&apos;t available for legacy .doc documents.</p>
+            )}
+            <a href={wordHref} download={name} data-testid="word-download" className={styles.downloadLink}>
+              Download {name}
+            </a>
+          </div>
+        ) : isHtml ? (
+          <div ref={contentRef} className={styles.contentArea}>
+            <iframe
+              title="Rendered HTML document"
+              data-testid="html-preview"
+              sandbox="allow-scripts allow-popups allow-forms allow-modals"
+              srcDoc={content}
+              className={styles.htmlPreview}
+            />
+          </div>
         ) : (
-          <article
-            aria-label="Rendered markdown document"
-            data-testid="markdown-preview"
-            dir={textDirection}
-            className={styles.preview}
-            dangerouslySetInnerHTML={{ __html: preview }}
-          />
+          <div ref={contentRef} className={styles.contentArea}>
+            <article
+              aria-label="Rendered markdown document"
+              data-testid="markdown-preview"
+              dir={textDirection}
+              className={styles.preview}
+              dangerouslySetInnerHTML={{ __html: preview }}
+            />
+          </div>
         )}
       </div>
     </PluginPage>
@@ -243,6 +414,20 @@ const getStyles = (theme: GrafanaTheme2) => ({
     display: flex;
     gap: ${theme.spacing(1)};
   `,
+  contentArea: css`
+    display: flex;
+    width: 100%;
+
+    &:fullscreen {
+      padding: ${theme.spacing(3)};
+      background: ${theme.colors.background.primary};
+    }
+
+    &:fullscreen > * {
+      flex: 1;
+      max-height: none;
+    }
+  `,
   editor: css`
     box-sizing: border-box;
     width: 100%;
@@ -251,6 +436,50 @@ const getStyles = (theme: GrafanaTheme2) => ({
     font-family: monospace;
     text-align: start;
     resize: vertical;
+  `,
+  htmlPreview: css`
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 500px;
+    border: 1px solid ${theme.colors.border.weak};
+    background: ${theme.colors.background.primary};
+  `,
+  imageWrapper: css`
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: ${theme.spacing(3)};
+    border: 1px solid ${theme.colors.border.weak};
+    background: ${theme.colors.background.secondary};
+  `,
+  imagePreview: css`
+    max-width: 100%;
+    max-height: 70vh;
+  `,
+  wordWrapper: css`
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 300px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: ${theme.spacing(2)};
+    padding: ${theme.spacing(3)};
+    border: 1px solid ${theme.colors.border.weak};
+    background: ${theme.colors.background.secondary};
+  `,
+  downloadLink: css`
+    color: ${theme.colors.primary.text};
+
+    /* Doubled selector wins the specificity tie against ".contentArea:fullscreen > *"
+       so the link keeps its natural size instead of being stretched to fill the preview area. */
+    && {
+      flex: 0 0 auto;
+    }
   `,
   preview: css`
     box-sizing: border-box;

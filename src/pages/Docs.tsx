@@ -13,6 +13,7 @@ import { DocsHeader } from '../components/Docs/DocsHeader';
 import { DocumentTools } from '../components/Docs/DocumentTools';
 import { SavedDocuments } from '../components/Docs/SavedDocuments';
 import { ImportedDocument } from '../components/Docs/types';
+import { isSupportedDocumentName, readDocumentFile, sanitizeDocumentName, sanitizeFolderName } from '../components/Docs/docTypes';
 
 const encodeDocumentPath = (path: string) => path.split('/').map(encodeURIComponent).join('/');
 
@@ -61,11 +62,11 @@ function Docs() {
 
   const createDocument = (event: FormEvent) => {
     event.preventDefault();
-    const name = newName.trim().replace(/[^a-zA-Z0-9._-]/g, '-');
+    const name = sanitizeDocumentName(newName.trim());
     if (!name) {
       return;
     }
-    const filename = name.endsWith('.md') ? name : `${name}.md`;
+    const filename = isSupportedDocumentName(name) ? name : `${name}.md`;
     const path = selectedFolder ? `${selectedFolder}/${filename}` : filename;
     navigate(prefixRoute(`${ROUTES.DOCS}/${encodeDocumentPath(path)}`), {
       state: { newDocument: true },
@@ -74,7 +75,7 @@ function Docs() {
 
   const createFolder = async (event: FormEvent) => {
     event.preventDefault();
-    const folder = newFolder.trim().replace(/[^a-zA-Z0-9._/-]/g, '-');
+    const folder = sanitizeFolderName(newFolder.trim());
     if (!folder) {
       return;
     }
@@ -87,15 +88,15 @@ function Docs() {
   const importDocument = async (event: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.currentTarget.files ?? []);
     event.currentTarget.value = '';
-    const markdownFiles = files.filter((file) => file.name.toLowerCase().endsWith('.md'));
-    if (markdownFiles.length === 0) {
-      setStatus('Choose a Markdown (.md) file');
+    const importableFiles = files.filter((file) => isSupportedDocumentName(file.name));
+    if (importableFiles.length === 0) {
+      setStatus('Choose a Markdown, HTML, or image file');
       return;
     }
 
-    const imported = await Promise.all(markdownFiles.map(async (file) => ({
-      name: file.name.replace(/[^a-zA-Z0-9._-]/g, '-'),
-      content: await file.text(),
+    const imported = await Promise.all(importableFiles.map(async (file) => ({
+      name: sanitizeDocumentName(file.name),
+      content: await readDocumentFile(file),
     })));
     if (imported.length === 1) {
       setImportedName(imported[0].name);
@@ -103,7 +104,7 @@ function Docs() {
       setStatus('Choose a name for the imported document');
     } else {
       setImportedDocuments(imported);
-      setStatus(`${imported.length} Markdown documents ready to save`);
+      setStatus(`${imported.length} documents ready to save`);
     }
   };
 
@@ -125,11 +126,11 @@ function Docs() {
 
   const openImportedDocument = (event: FormEvent) => {
     event.preventDefault();
-    const name = importedName.trim().replace(/[^a-zA-Z0-9._-]/g, '-');
+    const name = sanitizeDocumentName(importedName.trim());
     if (!name) {
       return;
     }
-    const filename = name.toLowerCase().endsWith('.md') ? name : `${name}.md`;
+    const filename = isSupportedDocumentName(name) ? name : `${name}.md`;
     const path = selectedFolder ? `${selectedFolder}/${filename}` : filename;
     navigate(prefixRoute(`${ROUTES.DOCS}/${encodeDocumentPath(path)}`), {
       state: { importedContent },

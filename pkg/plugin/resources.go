@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	_ "github.com/lib/pq"
@@ -22,9 +23,58 @@ type documentMove struct {
 	Folder string `json:"folder"`
 }
 
+// textDocumentExtensions are stored and transported as plain UTF-8 text.
+var textDocumentExtensions = []string{".md", ".html", ".htm", ".svg"}
+
+// binaryDocumentExtensions are transported as base64 since they may contain non-UTF-8 bytes.
+var binaryDocumentExtensions = []string{".png", ".jpg", ".jpeg", ".gif", ".webp", ".doc", ".docx"}
+
+func hasAllowedDocumentExtension(name string) bool {
+	lower := strings.ToLower(name)
+	for _, ext := range append(append([]string{}, textDocumentExtensions...), binaryDocumentExtensions...) {
+		if strings.HasSuffix(lower, ext) {
+			return true
+		}
+	}
+	return false
+}
+
+func isBinaryDocument(name string) bool {
+	lower := strings.ToLower(name)
+	for _, ext := range binaryDocumentExtensions {
+		if strings.HasSuffix(lower, ext) {
+			return true
+		}
+	}
+	return false
+}
+
+func contentTypeForDocument(name string) string {
+	switch strings.ToLower(filepath.Ext(name)) {
+	case ".html", ".htm":
+		return "text/html; charset=utf-8"
+	case ".svg":
+		return "image/svg+xml"
+	case ".png":
+		return "image/png"
+	case ".jpg", ".jpeg":
+		return "image/jpeg"
+	case ".gif":
+		return "image/gif"
+	case ".webp":
+		return "image/webp"
+	case ".doc":
+		return "application/msword"
+	case ".docx":
+		return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+	default:
+		return "text/markdown; charset=utf-8"
+	}
+}
+
 func safeDocumentPath(root, name string) (string, error) {
 	cleanName := filepath.Clean(name)
-	if cleanName == "." || cleanName == ".." || filepath.IsAbs(cleanName) || cleanName != name || !strings.HasSuffix(cleanName, ".md") {
+	if cleanName == "." || cleanName == ".." || filepath.IsAbs(cleanName) || cleanName != name || !hasAllowedDocumentExtension(cleanName) {
 		return "", fmt.Errorf("invalid document name")
 	}
 	path := filepath.Join(root, cleanName)
@@ -125,15 +175,28 @@ func (a *App) handleDocs(w http.ResponseWriter, req *http.Request) {
 			http.Error(w, "failed to read document: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
+		responseContent := content
+		if isBinaryDocument(name) {
+			responseContent = base64.StdEncoding.EncodeToString([]byte(content))
+		}
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(document{Name: name, Content: content})
+		_ = json.NewEncoder(w).Encode(document{Name: name, Content: responseContent})
 	case http.MethodPut:
 		var body document
 		if err := json.NewDecoder(req.Body).Decode(&body); err != nil {
 			http.Error(w, "invalid document body: "+err.Error(), http.StatusBadRequest)
 			return
 		}
-		if err := a.documentStore.Put(req.Context(), name, body.Content); err != nil {
+		storeContent := body.Content
+		if isBinaryDocument(name) {
+			decoded, err := base64.StdEncoding.DecodeString(body.Content)
+			if err != nil {
+				http.Error(w, "invalid document content: expected base64 for binary document", http.StatusBadRequest)
+				return
+			}
+			storeContent = string(decoded)
+		}
+		if err := a.documentStore.Put(req.Context(), name, storeContent); err != nil {
 			http.Error(w, "failed to save document: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -209,6 +272,10 @@ func (a *App) handleGetUsers(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	defer db.Close()
+	if err := ensureUsersSchema(db); err != nil {
+		http.Error(w, "failed to prepare users table: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
 	rows, err := db.Query(`SELECT id, username, team, phonenumber
 		 FROM public.users
 		 WHERE username LIKE $3 || '%'
@@ -282,6 +349,10 @@ func (a *App) handleDeleteUser(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	defer db.Close()
+	if err := ensureUsersSchema(db); err != nil {
+		http.Error(w, "failed to prepare users table: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
 	// run delete query
 	res, err := db.Exec("DELETE FROM public.users WHERE id = $1", id)
 	if err != nil {
@@ -332,6 +403,10 @@ func (a *App) handleAddUser(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	defer db.Close()
+	if err := ensureUsersSchema(db); err != nil {
+		http.Error(w, "failed to prepare users table: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
 	// Insert new user
 	var newID int
 	query := `INSERT INTO public.users (username, team, phonenumber) 
@@ -390,6 +465,10 @@ func (a *App) handleUpdateUser(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	defer db.Close()
+	if err := ensureUsersSchema(db); err != nil {
+		http.Error(w, "failed to prepare users table: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
 	result, err := db.Exec("UPDATE public.users SET username = $1, team = $2, phonenumber = $3 WHERE id = $4", body.Username, body.Team, body.Phonenumber, id)
 	if err != nil {
 		http.Error(w, "failed to update user: "+err.Error(), http.StatusInternalServerError)
@@ -415,4 +494,7 @@ func (a *App) registerRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/user/", a.handleUpdateUser)
 	mux.HandleFunc("/docs", a.handleDocs)
 	mux.HandleFunc("/docs/", a.handleDocs)
+	mux.HandleFunc("/chat/models", a.handleChatModels)
+	mux.HandleFunc("/chat/sessions", a.handleChatSessions)
+	mux.HandleFunc("/chat/sessions/", a.handleChatSessionDetail)
 }

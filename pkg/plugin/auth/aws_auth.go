@@ -22,9 +22,6 @@ type PluginSettings struct {
 	// SecureSocksProxyEnabled indicates whether secure socks proxy is configured for this datasource instance.
 	SecureSocksProxyEnabled bool `json:"enableSecureSocksProxy"`
 
-	// CustomSetting is an example placeholder for any custom setting your plugin receives from JSONData.
-	CustomSetting string `json:"customSetting,omitempty"`
-
 	// GrafanaSettings are server-level AWS auth configurations loaded from the request context.
 	GrafanaSettings awsds.AuthSettings `json:"-"`
 }

@@ -32,6 +32,7 @@ type AppPluginSettings = {
   documentS3Bucket?: string;
   documentS3Prefix?: string;
   documentS3Region?: string;
+  chatBedrockRegion?: string;
   authType?: AwsAuthType;
   profile?: string;
   assumeRoleARN?: string;
@@ -75,6 +76,10 @@ const AppConfig = ({ plugin }: AppConfigProps) => {
     dbname: jsonData?.dbname || '',
   });
   const isDBSubmitDisabled = Boolean(!DBstate.host || !DBstate.user || (!DBstate.password && !DBstate.isPasswordSet) || !DBstate.port);
+  const [dbTest, setDbTest] = useState<{ status: 'idle' | 'testing' | 'ok' | 'error'; message: string }>({
+    status: 'idle',
+    message: '',
+  });
   const [storageState, setStorageState] = useState<DocumentStorageState>({
     documentStorage: jsonData?.documentStorage === 's3' ? 's3' : 'local',
     documentS3Bucket: jsonData?.documentS3Bucket || '',
@@ -95,6 +100,11 @@ const AppConfig = ({ plugin }: AppConfigProps) => {
     status: 'idle',
     message: '',
   });
+  const [chatBedrockRegion, setChatBedrockRegion] = useState(jsonData?.chatBedrockRegion || '');
+  const [chatTest, setChatTest] = useState<{ status: 'idle' | 'testing' | 'ok' | 'error'; message: string }>({
+    status: 'idle',
+    message: '',
+  });
 
   const onResetDBPassword= () =>
     setDBState({
@@ -106,27 +116,34 @@ const AppConfig = ({ plugin }: AppConfigProps) => {
   setDBState({...DBstate, [event.target.name]: event.target.value.trim()});
   };
 
-  const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (isDBSubmitDisabled) {
       return;
     }
     const secureJsonData: Record<string, string> = {};
     if (DBstate.password) {secureJsonData.password = DBstate.password; }
-    updatePluginAndReload(plugin.meta.id, {
-      enabled,
-      pinned,
-      jsonData: {
-        ...jsonData,
-        host: DBstate.host,
-        port: DBstate.port,
-        user: DBstate.user,
-        dbname: DBstate.dbname,
-      },
-      // This cannot be queried later by the frontend.
-      // We don't want to override it in case it was set previously and left untouched now.
-      secureJsonData: Object.keys(secureJsonData).length ? secureJsonData : undefined,
-    });
+    setDbTest({ status: 'testing', message: 'Saving and testing...' });
+    try {
+      await updatePlugin(plugin.meta.id, {
+        enabled,
+        pinned,
+        jsonData: {
+          ...jsonData,
+          host: DBstate.host,
+          port: DBstate.port,
+          user: DBstate.user,
+          dbname: DBstate.dbname,
+        },
+        // This cannot be queried later by the frontend.
+        // We don't want to override it in case it was set previously and left untouched now.
+        secureJsonData: Object.keys(secureJsonData).length ? secureJsonData : undefined,
+      });
+      await checkDBConnection(plugin.meta.id);
+      setDbTest({ status: 'ok', message: 'Connected to the database' });
+    } catch (error) {
+      setDbTest({ status: 'error', message: healthErrorMessage(error, 'Unable to reach the database') });
+    }
   };
   const onStorageSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -166,6 +183,25 @@ const AppConfig = ({ plugin }: AppConfigProps) => {
       setStorageTest({ status: 'ok', message: health });
     } catch (error) {
       setStorageTest({ status: 'error', message: healthErrorMessage(error) });
+    }
+  };
+
+  const onChatSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setChatTest({ status: 'testing', message: 'Saving and testing...' });
+    try {
+      await updatePlugin(plugin.meta.id, {
+        enabled,
+        pinned,
+        jsonData: {
+          ...jsonData,
+          chatBedrockRegion,
+        },
+      });
+      const modelCount = await checkChatModels(plugin.meta.id);
+      setChatTest({ status: 'ok', message: `Connected to Bedrock (${modelCount} model${modelCount === 1 ? '' : 's'} available)` });
+    } catch (error) {
+      setChatTest({ status: 'error', message: healthErrorMessage(error, 'Unable to reach Bedrock') });
     }
   };
 
@@ -231,9 +267,17 @@ const AppConfig = ({ plugin }: AppConfigProps) => {
           />
         </Field>
         <div className={s.marginTop}>
-          <Button title="Save DB settings" type="submit" data-testid="save-db-settings" disabled={isDBSubmitDisabled}>
-            Save DB settings
+          <Button title="Save DB settings" type="submit" data-testid="save-db-settings" disabled={isDBSubmitDisabled || dbTest.status === 'testing'}>
+            {dbTest.status === 'testing' ? 'Saving & testing...' : 'Save & test'}
           </Button>
+          {dbTest.status !== 'idle' && (
+            <div className={s.marginTop} data-testid="db-test-result">
+              <Alert
+                severity={dbTest.status === 'error' ? 'error' : dbTest.status === 'ok' ? 'success' : 'info'}
+                title={dbTest.message}
+              />
+            </div>
+          )}
         </div>
       </FieldSet>
     </form>
@@ -419,6 +463,38 @@ const AppConfig = ({ plugin }: AppConfigProps) => {
         </div>
       </FieldSet>
       </form>
+      <form onSubmit={onChatSubmit}>
+        <FieldSet label="AI Chat (Amazon Bedrock)" className={s.marginTop}>
+          <Field
+            label="AWS region"
+            description="Region Bedrock is available in. Falls back to the AWS_REGION environment variable. Uses the AWS auth settings configured above (inherited IAM role by default)."
+            className={s.marginTop}
+          >
+            <Input
+              width={60}
+              value={chatBedrockRegion}
+              data-testid="chat-bedrock-region"
+              id="chat-bedrock-region"
+              name="chatBedrockRegion"
+              placeholder="us-east-1"
+              onChange={(event) => setChatBedrockRegion(event.currentTarget.value.trim())}
+            />
+          </Field>
+          <div className={s.marginTop}>
+            <Button title="Save AI chat settings" type="submit" data-testid="save-chat-settings" disabled={chatTest.status === 'testing'}>
+              {chatTest.status === 'testing' ? 'Saving & testing...' : 'Save & test'}
+            </Button>
+            {chatTest.status !== 'idle' && (
+              <div className={s.marginTop} data-testid="chat-test-result">
+                <Alert
+                  severity={chatTest.status === 'error' ? 'error' : chatTest.status === 'ok' ? 'success' : 'info'}
+                  title={chatTest.message}
+                />
+              </div>
+            )}
+          </div>
+        </FieldSet>
+      </form>
     </>
   );
 };
@@ -433,18 +509,6 @@ const getStyles = (theme: GrafanaTheme2) => ({
     margin-top: ${theme.spacing(3)};
   `,
 });
-
-const updatePluginAndReload = async (pluginId: string, data: Partial<PluginMeta<AppPluginSettings>>) => {
-  try {
-    await updatePlugin(pluginId, data);
-
-    // Reloading the page as the changes made here wouldn't be propagated to the actual plugin otherwise.
-    // This is not ideal, however unfortunately currently there is no supported way for updating the plugin state.
-    window.location.reload();
-  } catch (e) {
-    console.error('Error while updating the plugin', e);
-  }
-};
 
 const updatePlugin = async (pluginId: string, data: Partial<PluginMeta>) => {
   console.log(data);
@@ -472,7 +536,40 @@ const checkPluginHealth = async (pluginId: string): Promise<string> => {
   throw lastError;
 };
 
-const healthErrorMessage = (error: unknown): string => {
+const healthErrorMessage = (error: unknown, fallback = 'Unable to reach document storage'): string => {
   const data = (error as { data?: { message?: string; error?: string } })?.data;
-  return data?.message || data?.error || 'Unable to reach document storage';
+  return data?.message || data?.error || fallback;
 };
+
+// Saving settings restarts the plugin backend, so the first call can land mid-restart.
+const checkChatModels = async (pluginId: string): Promise<number> => {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const result = await getBackendSrv().get<{ models?: unknown[] }>(
+        `/api/plugins/${pluginId}/resources/chat/models`
+      );
+      return Array.isArray(result?.models) ? result.models.length : 0;
+    } catch (error) {
+      lastError = error;
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+  }
+  throw lastError;
+};
+
+// Saving settings restarts the plugin backend, so the first call can land mid-restart.
+const checkDBConnection = async (pluginId: string): Promise<void> => {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      await getBackendSrv().get(`/api/plugins/${pluginId}/resources/users?page=1&limit=1`);
+      return;
+    } catch (error) {
+      lastError = error;
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+  }
+  throw lastError;
+};
+

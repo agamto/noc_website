@@ -27,6 +27,9 @@ function PageOne() {
           <LinkButton data-testid="main-dashboards-link" className={s.appLink} href={prefixRoute(ROUTES.DASHBOARDS)}>
             Dashboards
           </LinkButton>
+          <LinkButton data-testid="main-chat-link" className={s.appLink} href={prefixRoute(ROUTES.CHAT)}>
+            AI Chat
+          </LinkButton>
         </nav>
       </main>
     </PluginPage>
@@ -75,7 +78,7 @@ const getStyles = (theme: GrafanaTheme2) => ({
   `,
   appLinks: css`
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     width: min(100%, 880px);
     gap: ${theme.spacing(2)};
 

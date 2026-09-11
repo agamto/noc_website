@@ -3,6 +3,7 @@ import { css } from '@emotion/css';
 import { GrafanaTheme2 } from '@grafana/data';
 import { Button, useStyles2 } from '@grafana/ui';
 import { Link } from 'react-router-dom';
+import { badgeForDocument } from './docTypes';
 
 type SavedDocumentsProps = {
   documentCount: number;
@@ -48,7 +49,7 @@ export function SavedDocuments({ documentCount, documents, getDocumentUrl }: Sav
                   <tr key={name}>
                     <td>
                       <Link className={styles.documentLink} title={name} to={getDocumentUrl(name)}>
-                        <span className={styles.fileBadge}>MD</span>
+                        <span className={styles.fileBadge}>{badgeForDocument(name)}</span>
                         <span className={styles.documentName}>{name}</span>
                       </Link>
                     </td>

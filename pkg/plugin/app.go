@@ -33,6 +33,7 @@ type App struct {
 	backend.CallResourceHandler
 	settings      backend.AppInstanceSettings
 	documentStore DocumentStore
+	bedrockRegion string
 }
 
 // NewApp creates a new example *App instance.
@@ -42,6 +43,7 @@ func NewApp(ctx context.Context, settings backend.AppInstanceSettings) (instance
 		DocumentS3Bucket string `json:"documentS3Bucket"`
 		DocumentS3Prefix string `json:"documentS3Prefix"`
 		DocumentS3Region string `json:"documentS3Region"`
+		ChatBedrockRegion string `json:"chatBedrockRegion"`
 	}
 	if err := json.Unmarshal(settings.JSONData, &storageSettings); err != nil {
 		return nil, fmt.Errorf("parse plugin settings: %w", err)
@@ -86,7 +88,7 @@ func NewApp(ctx context.Context, settings backend.AppInstanceSettings) (instance
 		return nil, fmt.Errorf("unsupported document storage: %s", storageSettings.DocumentStorage)
 	}
 
-	app := App{documentStore: documentStore}
+	app := App{documentStore: documentStore, bedrockRegion: storageSettings.ChatBedrockRegion}
 	app.settings = settings
 	// Use a httpadapter (provided by the SDK) for resource calls. This allows us
 	// to use a *http.ServeMux for resource calls, so we can map multiple routes
