@@ -33,7 +33,7 @@ test.describe('navigating app', () => {
     await newDocumentForm.getByTestId('new-document-name').fill('runbook.md');
     await page.locator('[data-testid="create-document"]').click({ force: true });
     await expect(page.getByText('runbook.md')).toBeVisible();
-    const markdownContent = page.locator('textarea[aria-label="Markdown content"]');
+    const markdownContent = page.locator('textarea[aria-label="Document content"]');
     await expect(markdownContent).toBeVisible({ timeout: 3000 });
     await markdownContent.fill('# Runbook\n\nStart here.', { timeout: 3000 });
     await page.locator('[data-testid="save-document"]').click({ force: true });
@@ -57,10 +57,63 @@ test.describe('navigating app', () => {
     await page.getByLabel('Imported document name').fill('renamed.md');
     await page.locator('[data-testid="open-imported-document"]').click({ force: true });
     await expect(page.locator('[data-testid="document-title"]')).toHaveText('renamed.md');
-      await expect(page.locator('textarea[aria-label="Markdown content"]')).toHaveValue('# Imported document\n\nImported content.');
+      await expect(page.locator('textarea[aria-label="Document content"]')).toHaveValue('# Imported document\n\nImported content.');
       await page.locator('[data-testid="save-document"]').click({ force: true });
     await expect(page.locator('[role="status"]')).toHaveText('Saved');
     await expect(page.locator('[data-testid="markdown-preview"] h1')).toHaveText('Imported document');
+  });
+
+  test('imports an html file into the document editor', async ({ gotoPage, page }) => {
+    const documentName = `imported-e2e-${test.info().parallelIndex}.html`;
+    try {
+      await gotoPage(`/${ROUTES.DOCS}`);
+      await page.locator('#import-markdown-file').setInputFiles({
+        name: 'imported.html',
+        mimeType: 'text/html',
+        buffer: Buffer.from('<h1>Imported HTML</h1><p>Hello world.</p>'),
+      });
+
+      await page.getByLabel('Imported document name').fill(documentName);
+      await page.locator('[data-testid="open-imported-document"]').click({ force: true });
+      await expect(page.locator('[data-testid="document-title"]')).toHaveText(documentName);
+      await expect(page.locator('textarea[aria-label="Document content"]')).toHaveValue(
+        '<h1>Imported HTML</h1><p>Hello world.</p>'
+      );
+      await page.locator('[data-testid="save-document"]').click({ force: true });
+      await expect(page.locator('[role="status"]')).toHaveText('Saved');
+      const htmlPreview = page.frameLocator('[data-testid="html-preview"]');
+      await expect(htmlPreview.locator('h1')).toHaveText('Imported HTML');
+    } finally {
+      await page.request.delete(`${docsResourceUrl}/${encodeURIComponent(documentName)}`).catch(() => {});
+    }
+  });
+
+  test('imports a png image into the document editor', async ({ gotoPage, page }) => {
+    const documentName = `imported-e2e-${test.info().parallelIndex}.png`;
+    // 1x1 transparent PNG pixel
+    const pngBuffer = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+      'base64'
+    );
+    try {
+      await gotoPage(`/${ROUTES.DOCS}`);
+      await page.locator('#import-markdown-file').setInputFiles({
+        name: 'imported.png',
+        mimeType: 'image/png',
+        buffer: pngBuffer,
+      });
+
+      await page.getByLabel('Imported document name').fill(documentName);
+      await page.locator('[data-testid="open-imported-document"]').click({ force: true });
+      await expect(page.locator('[data-testid="document-title"]')).toHaveText(documentName);
+      const imagePreview = page.locator('[data-testid="image-preview"]');
+      await expect(imagePreview).toHaveAttribute('src', /^data:image\/png;base64,/);
+      await page.locator('[data-testid="save-document"]').click({ force: true });
+      await expect(page.locator('[role="status"]')).toHaveText('Saved');
+      await expect(imagePreview).toHaveAttribute('src', /^data:image\/png;base64,/);
+    } finally {
+      await page.request.delete(`${docsResourceUrl}/${encodeURIComponent(documentName)}`).catch(() => {});
+    }
   });
 
   test('paginates saved documents and changes the page limit', async ({ gotoPage, page }) => {

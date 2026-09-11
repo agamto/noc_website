@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	_ "github.com/lib/pq"
@@ -22,9 +23,54 @@ type documentMove struct {
 	Folder string `json:"folder"`
 }
 
+// textDocumentExtensions are stored and transported as plain UTF-8 text.
+var textDocumentExtensions = []string{".md", ".html", ".htm", ".svg"}
+
+// binaryDocumentExtensions are transported as base64 since they may contain non-UTF-8 bytes.
+var binaryDocumentExtensions = []string{".png", ".jpg", ".jpeg", ".gif", ".webp"}
+
+func hasAllowedDocumentExtension(name string) bool {
+	lower := strings.ToLower(name)
+	for _, ext := range append(append([]string{}, textDocumentExtensions...), binaryDocumentExtensions...) {
+		if strings.HasSuffix(lower, ext) {
+			return true
+		}
+	}
+	return false
+}
+
+func isBinaryDocument(name string) bool {
+	lower := strings.ToLower(name)
+	for _, ext := range binaryDocumentExtensions {
+		if strings.HasSuffix(lower, ext) {
+			return true
+		}
+	}
+	return false
+}
+
+func contentTypeForDocument(name string) string {
+	switch strings.ToLower(filepath.Ext(name)) {
+	case ".html", ".htm":
+		return "text/html; charset=utf-8"
+	case ".svg":
+		return "image/svg+xml"
+	case ".png":
+		return "image/png"
+	case ".jpg", ".jpeg":
+		return "image/jpeg"
+	case ".gif":
+		return "image/gif"
+	case ".webp":
+		return "image/webp"
+	default:
+		return "text/markdown; charset=utf-8"
+	}
+}
+
 func safeDocumentPath(root, name string) (string, error) {
 	cleanName := filepath.Clean(name)
-	if cleanName == "." || cleanName == ".." || filepath.IsAbs(cleanName) || cleanName != name || !strings.HasSuffix(cleanName, ".md") {
+	if cleanName == "." || cleanName == ".." || filepath.IsAbs(cleanName) || cleanName != name || !hasAllowedDocumentExtension(cleanName) {
 		return "", fmt.Errorf("invalid document name")
 	}
 	path := filepath.Join(root, cleanName)
@@ -125,15 +171,28 @@ func (a *App) handleDocs(w http.ResponseWriter, req *http.Request) {
 			http.Error(w, "failed to read document: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
+		responseContent := content
+		if isBinaryDocument(name) {
+			responseContent = base64.StdEncoding.EncodeToString([]byte(content))
+		}
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(document{Name: name, Content: content})
+		_ = json.NewEncoder(w).Encode(document{Name: name, Content: responseContent})
 	case http.MethodPut:
 		var body document
 		if err := json.NewDecoder(req.Body).Decode(&body); err != nil {
 			http.Error(w, "invalid document body: "+err.Error(), http.StatusBadRequest)
 			return
 		}
-		if err := a.documentStore.Put(req.Context(), name, body.Content); err != nil {
+		storeContent := body.Content
+		if isBinaryDocument(name) {
+			decoded, err := base64.StdEncoding.DecodeString(body.Content)
+			if err != nil {
+				http.Error(w, "invalid document content: expected base64 for binary document", http.StatusBadRequest)
+				return
+			}
+			storeContent = string(decoded)
+		}
+		if err := a.documentStore.Put(req.Context(), name, storeContent); err != nil {
 			http.Error(w, "failed to save document: "+err.Error(), http.StatusInternalServerError)
 			return
 		}

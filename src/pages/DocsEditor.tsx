@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { css } from '@emotion/css';
 import { GrafanaTheme2,PageLayoutType } from '@grafana/data';
 import { getBackendSrv, PluginPage } from '@grafana/runtime';
@@ -9,6 +9,7 @@ import { prefixRoute } from '../utils/utils.routing';
 import { ROUTES } from '../constants';
 import { AppPageHeader } from '../components/AppPageHeader';
 import { BackToMainLink } from '../components/BackToMainLink';
+import { isBinaryDocument, isHtmlDocument, isImageDocument, mimeTypeForImage } from '../components/Docs/docTypes';
 
 type Document = { content: string };
 type EditorLocationState = { importedContent?: string; newDocument?: boolean };
@@ -35,10 +36,40 @@ function DocsEditor() {
   const [folderDocuments, setFolderDocuments] = useState<string[]>([]);
   const [moveFolder, setMoveFolder] = useState(currentFolder);
   const [textDirection, setTextDirection] = useState<'rtl' | 'ltr'>('rtl');
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  const isImage = isImageDocument(name);
+  const isHtml = isHtmlDocument(name);
+  const imageSrc = isImage
+    ? isBinaryDocument(name)
+      ? `data:${mimeTypeForImage(name)};base64,${content}`
+      : `data:${mimeTypeForImage(name)};charset=utf-8,${encodeURIComponent(content)}`
+    : '';
 
   useEffect(() => {
     setMoveFolder(currentFolder);
   }, [currentFolder]);
+
+  useEffect(() => {
+    const updateFullscreenState = () => setIsFullscreen(document.fullscreenElement === contentRef.current);
+    document.addEventListener('fullscreenchange', updateFullscreenState);
+    return () => document.removeEventListener('fullscreenchange', updateFullscreenState);
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'F11') {
+        return;
+      }
+
+      event.preventDefault();
+      void toggleFullscreen();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  });
 
   useEffect(() => {
     getBackendSrv()
@@ -131,7 +162,15 @@ function DocsEditor() {
     navigate(prefixRoute(`${ROUTES.DOCS}/${encodeDocumentPath(documentPath)}`));
   };
 
-  const preview = marked.parse(content, { renderer: markdownRenderer }) as string;
+  const toggleFullscreen = async () => {
+    if (document.fullscreenElement) {
+      await document.exitFullscreen();
+    } else {
+      await contentRef.current?.requestFullscreen();
+    }
+  };
+
+  const preview = isHtml || isImage ? '' : (marked.parse(content, { renderer: markdownRenderer }) as string);
 
   return (
     <PluginPage layout={PageLayoutType.Canvas}>
@@ -145,22 +184,24 @@ function DocsEditor() {
         <div className={styles.header}>
           <h1 data-testid="document-title">{name}</h1>
           <div className={styles.headerActions}>
-            <div className={styles.directionControls} aria-label="Text direction">
-              <Button
-                variant={textDirection === 'rtl' ? 'primary' : 'secondary'}
-                aria-pressed={textDirection === 'rtl'}
-                onClick={() => setTextDirection('rtl')}
-              >
-                RTL
-              </Button>
-              <Button
-                variant={textDirection === 'ltr' ? 'primary' : 'secondary'}
-                aria-pressed={textDirection === 'ltr'}
-                onClick={() => setTextDirection('ltr')}
-              >
-                LTR
-              </Button>
-            </div>
+            {!isImage && (
+              <div className={styles.directionControls} aria-label="Text direction">
+                <Button
+                  variant={textDirection === 'rtl' ? 'primary' : 'secondary'}
+                  aria-pressed={textDirection === 'rtl'}
+                  onClick={() => setTextDirection('rtl')}
+                >
+                  RTL
+                </Button>
+                <Button
+                  variant={textDirection === 'ltr' ? 'primary' : 'secondary'}
+                  aria-pressed={textDirection === 'ltr'}
+                  onClick={() => setTextDirection('ltr')}
+                >
+                  LTR
+                </Button>
+              </div>
+            )}
             <Combobox
               aria-label="Move document to folder"
               options={[{ label: 'Root', value: '' }, ...folders.map((folder) => ({ label: folder, value: folder }))]}
@@ -174,6 +215,14 @@ function DocsEditor() {
               placeholder="Choose document"
               onChange={(option) => openDocument(option?.value ?? '')}
             />
+            <Button
+              title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+              variant="secondary"
+              data-testid="toggle-fullscreen"
+              onClick={() => void toggleFullscreen()}
+            >
+              {isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+            </Button>
             {isEditing ? (
               <>
                 <Button title="Save document" data-testid="save-document" onClick={saveDocument}>Save document</Button>
@@ -181,7 +230,7 @@ function DocsEditor() {
               </>
             ) : (
               <>
-                <Button title="Edit" data-testid="edit-document" onClick={() => setIsEditing(true)}>Edit</Button>
+                {!isImage && <Button title="Edit" data-testid="edit-document" onClick={() => setIsEditing(true)}>Edit</Button>}
                 {isDeletePending ? (
                   <>
                     <Button title="Confirm delete" data-testid="confirm-delete" onClick={deleteDocument}>Confirm delete</Button>
@@ -195,24 +244,42 @@ function DocsEditor() {
             <span role="status">{status}</span>
           </div>
         </div>
-        {isEditing ? (
-          <textarea
-            aria-label="Markdown content"
-            data-testid="markdown-content"
-            dir={textDirection}
-            className={styles.editor}
-            rows={24}
-            value={content}
-            onChange={(event) => setContent(event.currentTarget.value)}
-          />
+        {isEditing && !isImage ? (
+          <div ref={contentRef} className={styles.contentArea}>
+            <textarea
+              aria-label="Document content"
+              data-testid="markdown-content"
+              dir={textDirection}
+              className={styles.editor}
+              rows={24}
+              value={content}
+              onChange={(event) => setContent(event.currentTarget.value)}
+            />
+          </div>
+        ) : isImage ? (
+          <div ref={contentRef} className={`${styles.contentArea} ${styles.imageWrapper}`}>
+            <img src={imageSrc} alt={name} data-testid="image-preview" className={styles.imagePreview} />
+          </div>
+        ) : isHtml ? (
+          <div ref={contentRef} className={styles.contentArea}>
+            <iframe
+              title="Rendered HTML document"
+              data-testid="html-preview"
+              sandbox="allow-scripts allow-popups allow-forms allow-modals"
+              srcDoc={content}
+              className={styles.htmlPreview}
+            />
+          </div>
         ) : (
-          <article
-            aria-label="Rendered markdown document"
-            data-testid="markdown-preview"
-            dir={textDirection}
-            className={styles.preview}
-            dangerouslySetInnerHTML={{ __html: preview }}
-          />
+          <div ref={contentRef} className={styles.contentArea}>
+            <article
+              aria-label="Rendered markdown document"
+              data-testid="markdown-preview"
+              dir={textDirection}
+              className={styles.preview}
+              dangerouslySetInnerHTML={{ __html: preview }}
+            />
+          </div>
         )}
       </div>
     </PluginPage>
@@ -243,6 +310,20 @@ const getStyles = (theme: GrafanaTheme2) => ({
     display: flex;
     gap: ${theme.spacing(1)};
   `,
+  contentArea: css`
+    display: flex;
+    width: 100%;
+
+    &:fullscreen {
+      padding: ${theme.spacing(3)};
+      background: ${theme.colors.background.primary};
+    }
+
+    &:fullscreen > * {
+      flex: 1;
+      max-height: none;
+    }
+  `,
   editor: css`
     box-sizing: border-box;
     width: 100%;
@@ -251,6 +332,28 @@ const getStyles = (theme: GrafanaTheme2) => ({
     font-family: monospace;
     text-align: start;
     resize: vertical;
+  `,
+  htmlPreview: css`
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 500px;
+    border: 1px solid ${theme.colors.border.weak};
+    background: ${theme.colors.background.primary};
+  `,
+  imageWrapper: css`
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: ${theme.spacing(3)};
+    border: 1px solid ${theme.colors.border.weak};
+    background: ${theme.colors.background.secondary};
+  `,
+  imagePreview: css`
+    max-width: 100%;
+    max-height: 70vh;
   `,
   preview: css`
     box-sizing: border-box;

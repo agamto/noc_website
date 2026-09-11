@@ -13,6 +13,7 @@ import { DocsHeader } from '../components/Docs/DocsHeader';
 import { DocumentTools } from '../components/Docs/DocumentTools';
 import { SavedDocuments } from '../components/Docs/SavedDocuments';
 import { ImportedDocument } from '../components/Docs/types';
+import { isSupportedDocumentName, readDocumentFile } from '../components/Docs/docTypes';
 
 const encodeDocumentPath = (path: string) => path.split('/').map(encodeURIComponent).join('/');
 
@@ -65,7 +66,7 @@ function Docs() {
     if (!name) {
       return;
     }
-    const filename = name.endsWith('.md') ? name : `${name}.md`;
+    const filename = isSupportedDocumentName(name) ? name : `${name}.md`;
     const path = selectedFolder ? `${selectedFolder}/${filename}` : filename;
     navigate(prefixRoute(`${ROUTES.DOCS}/${encodeDocumentPath(path)}`), {
       state: { newDocument: true },
@@ -87,15 +88,15 @@ function Docs() {
   const importDocument = async (event: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.currentTarget.files ?? []);
     event.currentTarget.value = '';
-    const markdownFiles = files.filter((file) => file.name.toLowerCase().endsWith('.md'));
-    if (markdownFiles.length === 0) {
-      setStatus('Choose a Markdown (.md) file');
+    const importableFiles = files.filter((file) => isSupportedDocumentName(file.name));
+    if (importableFiles.length === 0) {
+      setStatus('Choose a Markdown, HTML, or image file');
       return;
     }
 
-    const imported = await Promise.all(markdownFiles.map(async (file) => ({
+    const imported = await Promise.all(importableFiles.map(async (file) => ({
       name: file.name.replace(/[^a-zA-Z0-9._-]/g, '-'),
-      content: await file.text(),
+      content: await readDocumentFile(file),
     })));
     if (imported.length === 1) {
       setImportedName(imported[0].name);
@@ -103,7 +104,7 @@ function Docs() {
       setStatus('Choose a name for the imported document');
     } else {
       setImportedDocuments(imported);
-      setStatus(`${imported.length} Markdown documents ready to save`);
+      setStatus(`${imported.length} documents ready to save`);
     }
   };
 
@@ -129,7 +130,7 @@ function Docs() {
     if (!name) {
       return;
     }
-    const filename = name.toLowerCase().endsWith('.md') ? name : `${name}.md`;
+    const filename = isSupportedDocumentName(name) ? name : `${name}.md`;
     const path = selectedFolder ? `${selectedFolder}/${filename}` : filename;
     navigate(prefixRoute(`${ROUTES.DOCS}/${encodeDocumentPath(path)}`), {
       state: { importedContent },

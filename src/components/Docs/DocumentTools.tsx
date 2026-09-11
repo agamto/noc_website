@@ -2,6 +2,7 @@ import React, { ChangeEvent, FormEvent, useRef } from 'react';
 import { css } from '@emotion/css';
 import { GrafanaTheme2 } from '@grafana/data';
 import { Button, Combobox, Field, Input, useStyles2 } from '@grafana/ui';
+import { DOCUMENT_IMPORT_ACCEPT } from './docTypes';
 
 type DocumentToolsProps = {
   folders: string[];
@@ -60,16 +61,16 @@ export function DocumentTools({
         </div>
       </section>
       <section className={styles.importRow} aria-label="Import documents">
-        <Field label="Import Markdown">
+        <Field label="Import document">
           <div className={styles.importControl}>
             <input
               ref={importInputRef}
-              aria-label="Import Markdown"
+              aria-label="Import document"
               data-testid="import-markdown"
               id="import-markdown-file"
               type="file"
               multiple
-              accept=".md,text/markdown"
+              accept={DOCUMENT_IMPORT_ACCEPT}
               className={styles.hiddenFileInput}
               onChange={onImport}
             />

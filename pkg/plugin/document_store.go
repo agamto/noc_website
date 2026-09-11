@@ -72,7 +72,7 @@ func (store localDocumentStore) ListDocuments(_ context.Context, folder string) 
 	}
 	names := make([]string, 0, len(entries))
 	for _, entry := range entries {
-		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".md") {
+		if !entry.IsDir() && hasAllowedDocumentExtension(entry.Name()) {
 			names = append(names, entry.Name())
 		}
 	}
@@ -191,7 +191,7 @@ func (store *s3DocumentStore) ListDocuments(ctx context.Context, folder string) 
 		}
 		for _, object := range page.Contents {
 			name := strings.TrimPrefix(aws.ToString(object.Key), prefix)
-			if strings.HasSuffix(name, ".md") {
+			if hasAllowedDocumentExtension(name) {
 				names = append(names, name)
 			}
 		}
@@ -220,7 +220,7 @@ func (store *s3DocumentStore) Put(ctx context.Context, name, content string) err
 	if _, err := safeS3RelativePath(name, true); err != nil {
 		return err
 	}
-	_, err := store.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(store.bucket), Key: aws.String(store.key(name)), Body: strings.NewReader(content), ContentType: aws.String("text/markdown; charset=utf-8")})
+	_, err := store.client.PutObject(ctx, &s3.PutObjectInput{Bucket: aws.String(store.bucket), Key: aws.String(store.key(name)), Body: strings.NewReader(content), ContentType: aws.String(contentTypeForDocument(name))})
 	return err
 }
 
@@ -262,7 +262,7 @@ func safeS3RelativePath(value string, document bool) (string, error) {
 	if value == "" && !document {
 		return "", nil
 	}
-	if strings.Contains(value, "\\") || strings.ContainsRune(value, 0) || path.IsAbs(value) || path.Clean(value) != value || value == "." || value == ".." || (document && !strings.HasSuffix(value, ".md")) {
+	if strings.Contains(value, "\\") || strings.ContainsRune(value, 0) || path.IsAbs(value) || path.Clean(value) != value || value == "." || value == ".." || (document && !hasAllowedDocumentExtension(value)) {
 		return "", fmt.Errorf("invalid document storage path")
 	}
 	return value, nil
