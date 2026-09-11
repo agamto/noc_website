@@ -13,7 +13,7 @@ import { DocsHeader } from '../components/Docs/DocsHeader';
 import { DocumentTools } from '../components/Docs/DocumentTools';
 import { SavedDocuments } from '../components/Docs/SavedDocuments';
 import { ImportedDocument } from '../components/Docs/types';
-import { isSupportedDocumentName, readDocumentFile } from '../components/Docs/docTypes';
+import { isSupportedDocumentName, readDocumentFile, sanitizeDocumentName, sanitizeFolderName } from '../components/Docs/docTypes';
 
 const encodeDocumentPath = (path: string) => path.split('/').map(encodeURIComponent).join('/');
 
@@ -62,7 +62,7 @@ function Docs() {
 
   const createDocument = (event: FormEvent) => {
     event.preventDefault();
-    const name = newName.trim().replace(/[^a-zA-Z0-9._-]/g, '-');
+    const name = sanitizeDocumentName(newName.trim());
     if (!name) {
       return;
     }
@@ -75,7 +75,7 @@ function Docs() {
 
   const createFolder = async (event: FormEvent) => {
     event.preventDefault();
-    const folder = newFolder.trim().replace(/[^a-zA-Z0-9._/-]/g, '-');
+    const folder = sanitizeFolderName(newFolder.trim());
     if (!folder) {
       return;
     }
@@ -95,7 +95,7 @@ function Docs() {
     }
 
     const imported = await Promise.all(importableFiles.map(async (file) => ({
-      name: file.name.replace(/[^a-zA-Z0-9._-]/g, '-'),
+      name: sanitizeDocumentName(file.name),
       content: await readDocumentFile(file),
     })));
     if (imported.length === 1) {
@@ -126,7 +126,7 @@ function Docs() {
 
   const openImportedDocument = (event: FormEvent) => {
     event.preventDefault();
-    const name = importedName.trim().replace(/[^a-zA-Z0-9._-]/g, '-');
+    const name = sanitizeDocumentName(importedName.trim());
     if (!name) {
       return;
     }

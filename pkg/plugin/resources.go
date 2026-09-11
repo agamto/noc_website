@@ -27,7 +27,7 @@ type documentMove struct {
 var textDocumentExtensions = []string{".md", ".html", ".htm", ".svg"}
 
 // binaryDocumentExtensions are transported as base64 since they may contain non-UTF-8 bytes.
-var binaryDocumentExtensions = []string{".png", ".jpg", ".jpeg", ".gif", ".webp"}
+var binaryDocumentExtensions = []string{".png", ".jpg", ".jpeg", ".gif", ".webp", ".doc", ".docx"}
 
 func hasAllowedDocumentExtension(name string) bool {
 	lower := strings.ToLower(name)
@@ -63,6 +63,10 @@ func contentTypeForDocument(name string) string {
 		return "image/gif"
 	case ".webp":
 		return "image/webp"
+	case ".doc":
+		return "application/msword"
+	case ".docx":
+		return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 	default:
 		return "text/markdown; charset=utf-8"
 	}

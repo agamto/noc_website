@@ -63,6 +63,51 @@ test.describe('navigating app', () => {
     await expect(page.locator('[data-testid="markdown-preview"] h1')).toHaveText('Imported document');
   });
 
+  test('downloads the currently open document', async ({ gotoPage, page }) => {
+    const documentName = `download-e2e-${test.info().parallelIndex}.md`;
+    try {
+      await gotoPage(`/${ROUTES.DOCS}`);
+      await page.getByTestId('add-new-document').click();
+      await page.locator('#new-document-form').getByTestId('new-document-name').fill(documentName);
+      await page.locator('[data-testid="create-document"]').click({ force: true });
+      const markdownContent = page.locator('textarea[aria-label="Document content"]');
+      await expect(markdownContent).toBeVisible();
+      await markdownContent.fill('# Download me');
+      await page.locator('[data-testid="save-document"]').click({ force: true });
+      await expect(page.locator('[role="status"]')).toHaveText('Saved');
+
+      const downloadPromise = page.waitForEvent('download');
+      await page.locator('[data-testid="download-document"]').click({ force: true });
+      const download = await downloadPromise;
+      expect(download.suggestedFilename()).toBe(documentName);
+      const downloadedPath = await download.path();
+      const fs = await import('node:fs/promises');
+      const downloadedContent = await fs.readFile(downloadedPath as string, 'utf-8');
+      expect(downloadedContent).toBe('# Download me');
+    } finally {
+      await page.request.delete(`${docsResourceUrl}/${encodeURIComponent(documentName)}`).catch(() => {});
+    }
+  });
+
+  test('creates a document with a Hebrew name', async ({ gotoPage, page }) => {
+    const documentName = `\u05de\u05e1\u05de\u05da-${test.info().parallelIndex}.md`;
+    try {
+      await gotoPage(`/${ROUTES.DOCS}`);
+      await page.getByTestId('add-new-document').click();
+      await page.locator('#new-document-form').getByTestId('new-document-name').fill(documentName);
+      await page.locator('[data-testid="create-document"]').click({ force: true });
+      await expect(page.locator('[data-testid="document-title"]')).toHaveText(documentName);
+      const markdownContent = page.locator('textarea[aria-label="Document content"]');
+      await expect(markdownContent).toBeVisible();
+      await markdownContent.fill('# Hello');
+      await page.locator('[data-testid="save-document"]').click({ force: true });
+      await expect(page.locator('[role="status"]')).toHaveText('Saved');
+      await expect(page.getByText(documentName)).toBeVisible();
+    } finally {
+      await page.request.delete(`${docsResourceUrl}/${encodeURIComponent(documentName)}`).catch(() => {});
+    }
+  });
+
   test('imports an html file into the document editor', async ({ gotoPage, page }) => {
     const documentName = `imported-e2e-${test.info().parallelIndex}.html`;
     try {
@@ -115,6 +160,61 @@ test.describe('navigating app', () => {
       await page.request.delete(`${docsResourceUrl}/${encodeURIComponent(documentName)}`).catch(() => {});
     }
   });
+
+  test('imports a docx document into the document editor', async ({ gotoPage, page }) => {
+    const documentName = `imported-e2e-${test.info().parallelIndex}.docx`;
+    // Minimal valid .docx (zip/OOXML) containing a single paragraph, generated with jszip.
+    const docxBuffer = Buffer.from(
+      'UEsDBAoAAAAAAOpYK12WsN0udQEAAHUBAAATAAAAW0NvbnRlbnRfVHlwZXNdLnhtbDw/eG1sIHZlcnNp' +
+        'b249IjEuMCIgZW5jb2Rpbmc9IlVURi04IiBzdGFuZGFsb25lPSJ5ZXMiPz48VHlwZXMgeG1sbnM9Imh0' +
+        'dHA6Ly9zY2hlbWFzLm9wZW54bWxmb3JtYXRzLm9yZy9wYWNrYWdlLzIwMDYvY29udGVudC10eXBlcyI+' +
+        'PERlZmF1bHQgRXh0ZW5zaW9uPSJyZWxzIiBDb250ZW50VHlwZT0iYXBwbGljYXRpb24vdm5kLm9wZW54' +
+        'bWxmb3JtYXRzLXBhY2thZ2UucmVsYXRpb25zaGlwcyt4bWwiLz48T3ZlcnJpZGUgUGFydE5hbWU9Ii93' +
+        'b3JkL2RvY3VtZW50LnhtbCIgQ29udGVudFR5cGU9ImFwcGxpY2F0aW9uL3ZuZC5vcGVueG1sZm9ybWF0' +
+        'cy1vZmZpY2Vkb2N1bWVudC53b3JkcHJvY2Vzc2luZ21sLmRvY3VtZW50Lm1haW4reG1sIi8+PC9UeXBl' +
+        'cz5QSwMECgAAAAAA6lgrXQAAAAAAAAAAAAAAAAYAAABfcmVscy9QSwMECgAAAAAA6lgrXZv9N+opAQAA' +
+        'KQEAAAsAAABfcmVscy8ucmVsczw/eG1sIHZlcnNpb249IjEuMCIgZW5jb2Rpbmc9IlVURi04IiBzdGFu' +
+        'ZGFsb25lPSJ5ZXMiPz48UmVsYXRpb25zaGlwcyB4bWxucz0iaHR0cDovL3NjaGVtYXMub3BlbnhtbGZv' +
+        'cm1hdHMub3JnL3BhY2thZ2UvMjAwNi9yZWxhdGlvbnNoaXBzIj48UmVsYXRpb25zaGlwIElkPSJySWQx' +
+        'IiBUeXBlPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvb2ZmaWNlRG9jdW1lbnQvMjAw' +
+        'Ni9yZWxhdGlvbnNoaXBzL29mZmljZURvY3VtZW50IiBUYXJnZXQ9IndvcmQvZG9jdW1lbnQueG1sIi8+' +
+        'PC9SZWxhdGlvbnNoaXBzPlBLAwQKAAAAAADqWCtdAAAAAAAAAAAAAAAABQAAAHdvcmQvUEsDBAoAAAAA' +
+        'AOpYK102tTMk4AAAAOAAAAARAAAAd29yZC9kb2N1bWVudC54bWw8P3htbCB2ZXJzaW9uPSIxLjAiIGVu' +
+        'Y29kaW5nPSJVVEYtOCIgc3RhbmRhbG9uZT0ieWVzIj8+PHc6ZG9jdW1lbnQgeG1sbnM6dz0iaHR0cDov' +
+        'L3NjaGVtYXMub3BlbnhtbGZvcm1hdHMub3JnL3dvcmRwcm9jZXNzaW5nbWwvMjAwNi9tYWluIj48dzpi' +
+        'b2R5Pjx3OnA+PHc6cj48dzp0PkltcG9ydGVkIFdvcmQgZG9jdW1lbnQuPC93OnQ+PC93OnI+PC93OnA+' +
+        'PC93OmJvZHk+PC93OmRvY3VtZW50PlBLAQIUAAoAAAAAAOpYK12WsN0udQEAAHUBAAATAAAAAAAAAAAA' +
+        'AAAAAAAAAABbQ29udGVudF9UeXBlc10ueG1sUEsBAhQACgAAAAAA6lgrXQAAAAAAAAAAAAAAAAYAAAAA' +
+        'AAAAAAAQAAAApgEAAF9yZWxzL1BLAQIUAAoAAAAAAOpYK12b/TfqKQEAACkBAAALAAAAAAAAAAAAAAAA' +
+        'AMoBAABfcmVscy8ucmVsc1BLAQIUAAoAAAAAAOpYK10AAAAAAAAAAAAAAAAFAAAAAAAAAAAAEAAAABwD' +
+        'AAB3b3JkL1BLAQIUAAoAAAAAAOpYK102tTMk4AAAAOAAAAARAAAAAAAAAAAAAAAAAD8DAAB3b3JkL2Rv' +
+        'Y3VtZW50LnhtbFBLBQYAAAAABQAFACABAABOBAAAAAA=',
+      'base64'
+    );
+    try {
+      await gotoPage(`/${ROUTES.DOCS}`);
+      await page.locator('#import-markdown-file').setInputFiles({
+        name: 'imported.docx',
+        mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        buffer: docxBuffer,
+      });
+
+      await page.getByLabel('Imported document name').fill(documentName);
+      await page.locator('[data-testid="open-imported-document"]').click({ force: true });
+      await expect(page.locator('[data-testid="document-title"]')).toHaveText(documentName);
+      await page.locator('[data-testid="save-document"]').click({ force: true });
+      await expect(page.locator('[role="status"]')).toHaveText('Saved');
+      const wordPreview = page.frameLocator('[data-testid="word-preview"]');
+      await expect(wordPreview.locator('p')).toHaveText('Imported Word document.');
+      await expect(page.locator('[data-testid="word-download"]')).toHaveAttribute(
+        'href',
+        /^data:application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document;base64,/
+      );
+    } finally {
+      await page.request.delete(`${docsResourceUrl}/${encodeURIComponent(documentName)}`).catch(() => {});
+    }
+  });
+
 
   test('paginates saved documents and changes the page limit', async ({ gotoPage, page }) => {
     const prefix = `pagination-e2e-${test.info().parallelIndex}`;
